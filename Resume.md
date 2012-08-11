@@ -29,15 +29,15 @@ Thesis: Theoretical Investigations of Crossover Effects in Fe(II) Ions.
  * Usage of LAPACK and BLAS libraries in FORTRAN90.
  * Compilation, optimization, and support of the quantum chemical codes on high performance clusters (AMD/Intel).
  * Knowledge of scripting languages: Perl, BASH, Python, and operating systems: UNIX, MacOS, Windows.
- - Usage and support of Bruker SMART APEX II three-axial diffractometer.
- - Modeling disorder of guest and solvent molecules in metal-organic frameworks.
- - Structure solution using direct and Patterson methods. Structure refinement using SHELXTL suite.
+ * Usage and support of Bruker SMART APEX II three-axial diffractometer.
+ * Modeling disorder of guest and solvent molecules in metal-organic frameworks.
+ * Structure solution using direct and Patterson methods. Structure refinement using SHELXTL suite.
 
 ## PEER-REVIEWED PUBLICATIONS:
 
-1. L. E. Polander, L. Pandey, A. Romanov, **A. Fonari** *et al*, *2,6-Diacylnaphthalene-1,8:4,5-Bis(dicarboximides): Synthesis, Reduction Potentials, and Core Extension*. JOC (**2012**): 10.1021/jo3006232
-1. I. V. Kosilkin, E. A. Hillenbrand, P. Tongwa, A. Fonari et al, Synthesis, structure, thermal and nonlinear optical properties of a series of novel D-pi-A chromophores with varying alkoxy substituents. J. Mol. Struct. (2011): 10.1016/j.molstruc.2011.09.032
-1. A. Fonari et al, Experimental and theoretical structural study of (3E,5E)-3,5-bis-(benzylidene)-4-oxopiperidinium mono- and (3E,5E)-3,5-bis-(4-N,N-dialkylammonio)benzylidene)-4-oxopiperidinium trications. J. Mol. Struct. (2011): 10.1016/j.molstruc.2011.06.020
+1. L. E. Polander, L. Pandey, A. Romanov, **A. Fonari**, *et al.*, *2,6-Diacylnaphthalene-1,8:4,5-Bis(dicarboximides): Synthesis, Reduction Potentials, and Core Extension*. JOC (**2012**): [10.1021/jo3006232](http://dx.doi.org/10.1021/jo3006232)
+1. I. V. Kosilkin, E. A. Hillenbrand, P. Tongwa, **A. Fonari**, *et al.*, Synthesis, structure, thermal and nonlinear optical properties of a series of novel D-pi-A chromophores with varying alkoxy substituents. J. Mol. Struct. (2011): [10.1016/j.molstruc.2011.09.032](http://dx.doi.org/10.1016/j.molstruc.2011.09.032)
+1. **A. Fonari**, *et al.*, *Experimental and theoretical structural study of (3E,5E)-3,5-bis-(benzylidene)-4-oxopiperidinium mono- and (3E,5E)-3,5-bis-(4-N,N-dialkylammonio)benzylidene)-4-oxopiperidinium trications*. J. Mol. Struct. (2011): [10.1016/j.molstruc.2011.06.020](http://dx.doi.org/10.1016/j.molstruc.2011.06.020)
 1. A. Fonari et al, Two polymorphs of phenanthro[4,5-abc]phenazine-18-crown-6: Preparation, X-ray diffraction and DFT studies. J. Mol. Struct. (2011): 10.1016/j.molstruc.2011.04.039
 1. A. Fonari et al, On justification of Cu(II) environment in mononuclear complexes: Joint X-ray and AIM studies. Polyhedron (2011): 10.1016/j.poly.2011.04.002
 1. E. S. Leonova, M. V. Makarov, E. Y. Rybalkina, S. L. Nayani, P. Tongwa, A. Fonari et al, Structure-cytotoxicity relationship in a series of N-phosphorus substituted E,E-3,5-bis(3-pyridinylmethylene)- and E,E-3,5-bis(4-pyridinylmethylene) piperid-4-ones. Eur. J. Med. Chem (2010): 10.1016/j.ejmech.2010.09.058
