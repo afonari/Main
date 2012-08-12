@@ -4,7 +4,7 @@ Email: firstname.lastname@gatech.edu;
 
 ## EDUCATION:
  
- * Ph. D. (Chemistry) advisors: Prof. Jean-Luc Brédas and Dr. Veaceslav Coropceanu, GT (2011 – 2016).  
+ * Ph. D. (Chemistry) advisors: Prof. Jean-Luc Brédas and Dr. Veaceslav Coropceanu, GT (2011 – *2016*).  
 Thesis: Theoretical Investigations of High-Conductivity Binary Organic Crystals for Electronic Applications.
  * M. Sc. (Chemistry) advisors: Prof. Mikhail Yu. Antipin and Prof. Tatiana V. Timofeeva, New Mexico Highlands University (2009 – 2011).  
 Thesis: X-Ray Diffraction and Computational Studies of Materials for Photonics and Electronic Applications.
