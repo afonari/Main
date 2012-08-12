@@ -1,6 +1,6 @@
 # Alexandr Fonari
 Graduate Student, Department of Chemistry, Georgia Institute of Technology (GT), Atlanta, GA, 87701.  
-Phone: *upon request*; Email: firstname.lastname@gatech.edu;
+Email: firstname.lastname@gatech.edu;
 
 ## EDUCATION:
  
