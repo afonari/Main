@@ -1,5 +1,5 @@
 # Alexandr Fonari
-Graduate Student, Department of Chemistry, Georgia Institute of Technology (GT), Atlanta, GA, 87701.  
+Graduate Student, Department of Chemistry, Georgia Institute of Technology (GT), Atlanta, GA, 30332-0400.  
 Email: firstname.lastname@gatech.edu;
 
 ## EDUCATION:
@@ -19,7 +19,7 @@ Thesis: Theoretical Investigations of Crossover Effects in Fe(II) Ions.
   - Evaluating significance of lattice vibrations and electron-phonon coupling in charge transport of crystals of conjugated small organic molecules.
  * New Mexico Highlands University:
   - Single crystal X-ray diffraction (XRD) studies of organic, organometallic compounds, and metal-organic frameworks. 
-  - High resolution XRD investigates yielding experimental charge-density distribution of organic and organometallic compounds.
+  - High resolution XRD investigations yielding experimental charge-density distribution of organic and organometallic compounds.
   - Structural studies of crystal packing motifs of compounds for organic electronics.
 
 ## SKILLS:
