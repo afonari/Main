@@ -35,7 +35,7 @@ Thesis: *Theoretical Investigations of Crossover Effects in Fe(II) Ions*.
 
 ## PEER-REVIEWED PUBLICATIONS:
 
-1. I. V. Magedov, N. M. Evdokimov, A. S. Peretti, M. Karki, D. T. Lima, L. Frolova, M. R. Reisenauer, A. E. Romero, P. Tongwa, **A. Fonari**, *et al.*, *Reengineered Epipodophyllotoxin*. ChemComm (**2012**): *accepted*.
+1. I. V. Magedov, N. M. Evdokimov, A. S. Peretti, M. Karki, D. T. Lima, L. Frolova, M. R. Reisenauer, A. E. Romero, P. Tongwa, **A. Fonari**, *et al.*, *Reengineered Epipodophyllotoxin*. ChemComm (**2012**): *in press*.
 1. L. E. Polander, L. Pandey, A. Romanov, **A. Fonari**, *et al.*, *2,6-Diacylnaphthalene-1,8:4,5-Bis(dicarboximides): Synthesis, Reduction Potentials, and Core Extension*. JOC (**2012**): [10.1021/jo3006232](http://dx.doi.org/10.1021/jo3006232).
 1. I. V. Kosilkin, E. A. Hillenbrand, P. Tongwa, **A. Fonari**, *et al.*, *Synthesis, structure, thermal and nonlinear optical properties of a series of novel D-pi-A chromophores with varying alkoxy substituents*. J. Mol. Struct. (**2011**): [10.1016/j.molstruc.2011.09.032](http://dx.doi.org/10.1016/j.molstruc.2011.09.032).
 1. **A. Fonari**, *et al.*, *Experimental and theoretical structural study of (3E,5E)-3,5-bis-(benzylidene)-4-oxopiperidinium mono- and (3E,5E)-3,5-bis-(4-N,N-dialkylammonio)benzylidene)-4-oxopiperidinium trications*. J. Mol. Struct. (**2011**): [10.1016/j.molstruc.2011.06.020](http://dx.doi.org/10.1016/j.molstruc.2011.06.020).
