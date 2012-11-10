@@ -30,13 +30,14 @@ foreach (@t)
 }
 # print Dumper( \%a_masses );
 
+# atom list with masses
 my @a;
 @t = @{$data->{"atominfo"}->{"array"}->{"atoms"}->{"set"}->{"rc"}};
 foreach (@t)
 {
-    push(@a, $a_masses{trim($_->{"c"}[1])});
+    push(@a, $a_masses{trim($_->{"c"}[0])});
 }
-# print Dumper( \%a_masses );
+# print Dumper( @a );
 
 # basis vectors
 my @f;
@@ -87,13 +88,16 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     if($ev < 0.0){next;} # skip imaginary frequency
 
     my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*VaspToEv)); # a quanta
+
     my @disps = split('\s+', trim($e_vectors[$i]));
 
     for( my $j = 0; $j < scalar(@a_cart_pos_x); $j++)
     {
-        #printf("%10.6f %10.6f %10.6f %10.6f\n", $disps[3*$j], $disps[3*$j+1], $disps[3*$j+2], $qi0);
+        my $sqrtm = sqrt($a[$j]);
+        my($dx, $dy, $dz) = ($disps[3*$j]*$qi0/$sqrtm, $disps[3*$j+1]*$qi0/$sqrtm, $disps[3*$j+2]*$qi0/$sqrtm);
+        printf("%15.12f %15.12f %15.12f\n", $dx, $dy, $dz);
     }
-    #print "\n";
+    print "\n";
     
 }
 #foreach my $attributes (keys %{$data}){
