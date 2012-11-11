@@ -77,12 +77,12 @@ open( my $poscar_fh, ">", "POSCAR-Big" ) || die "Can't open POSCAR-Big file: $!"
 my @displacements = (-2, -1, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st deriv.
 for( my $i = 0; $i < scalar(@e_values); $i++)
 {
-    print "processing $i out ".scalar(@e_values)." eigenvalues\n";
+    print "processing ".($i+1)." out ".scalar(@e_values)." eigenvalues\n";
     my $ev = $e_values[$i]*(-1.0);
     if($ev < 0.0){next;} # skip imaginary frequency
 
     my $qi0 = sqrt((HBAR*CL)**2/(AM*sqrt($ev)*VaspToEv)); # mode quanta
-    printf("%15.12f %15.12f\n", sqrt($ev)*VaspToEv, $qi0);
+    # printf("%15.12f %15.12f\n", sqrt($ev)*VaspToEv, $qi0);
 
     my @disps = split('\s+', trim($e_vectors[$i]));
 
@@ -95,7 +95,7 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
         print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $f[7], $f[8], $f[9]);
         print $poscar_fh join(" ", uniq(@a_labels))."\n";
         print $poscar_fh join(" ", @a_count)."\n";
-        print $poscar_fh "Direct\n";
+        print $poscar_fh "Cartesian\n";
 
         for( my $j = 0; $j < scalar(@a_cart_pos_x); $j++)
         {
