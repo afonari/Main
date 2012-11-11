@@ -108,12 +108,7 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     
 }
 
-sub trim
-{
-   my $string = shift;
-   $string =~ s/^\s+|\s+$//g;
-   return $string;
-}
+sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
 
 # http://stackoverflow.com/questions/439647/how-do-i-print-unique-elements-in-perl-array
 sub uniq {local %_; grep {!$_{$_}++} @_}
