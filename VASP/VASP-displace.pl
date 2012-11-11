@@ -21,23 +21,16 @@ use constant VaspToEv => sqrt(EV/AMU)/Angstrom/(2*PI)*PlanckConstant; # [eV] 6.4
 my $xml = new XML::Simple();
 my $data = $xml->XMLin("vasprun.xml");
 
-# getting atomic masses
-my %a_masses;
+# atomic masses and labels
+my (@a_masses, @a_labels, @a_count);
 my @t = @{$data->{"atominfo"}->{"array"}->{"atomtypes"}->{"set"}->{"rc"}};
 foreach (@t)
 {
-    $a_masses{trim($_->{"c"}[1])} = trim($_->{"c"}[2]);
+    push(@a_masses, (trim($_->{"c"}[2])) x trim($_->{"c"}[0]));
+    push(@a_labels, (trim($_->{"c"}[1])) x trim($_->{"c"}[0]));
+    push(@a_count, trim($_->{"c"}[0]));
 }
-# print Dumper( \%a_masses );
-
-# atom list with masses
-my @a;
-@t = @{$data->{"atominfo"}->{"array"}->{"atoms"}->{"set"}->{"rc"}};
-foreach (@t)
-{
-    push(@a, $a_masses{trim($_->{"c"}[0])});
-}
-# print Dumper( @a );
+# print Dumper( @a_masses, @a_labels, @a_count );
 
 # basis vectors
 my @f;
@@ -70,43 +63,49 @@ for(my $i = 0; $i < scalar(@a_frac_pos_x); $i++ )
     push(@a_cart_pos_y, $f[2]*$v[0] + $f[5]*$v[1] + $f[8]*$v[2]);
     push(@a_cart_pos_z, $f[3]*$v[0] + $f[6]*$v[1] + $f[9]*$v[2]);
 }
-#print Dumper(@a_cart_pos_x);
-#print Dumper(@a_cart_pos_y);
-#print Dumper(@a_cart_pos_z);
+# print Dumper(@a_cart_pos_x, @a_cart_pos_y, @a_cart_pos_z);
 
 # hessian eigenvalues
 my @e_values = split('\s+', trim($data->{"calculation"}->{"dynmat"}->{"v"}->{"content"}));
 
 # hessian eigenvectors
 my @e_vectors = @{$data->{"calculation"}->{"dynmat"}->{"varray"}->{"eigenvectors"}->{"v"}};
-#print Dumper(@e_vectors);
+# print Dumper(@e_vectors);
 
-my @displacements = (-2, -1, 1, 2);
+open( my $poscar_fh, ">", "POSCAR-Big" ) || die "Can't open POSCAR-Big file: $!";
+
+my @displacements = (-2, -1, 1, 2); # hard-coded so far
 for( my $i = 0; $i < scalar(@e_values); $i++)
 {
     my $ev = $e_values[$i]*(-1.0);
     if($ev < 0.0){next;} # skip imaginary frequency
 
-    my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*VaspToEv)); # a quanta
-    printf("%10.6f", $qi0);
-    print "\n";
+    my $qi0 = sqrt((HBAR*CL)**2/(AM*sqrt($ev)*VaspToEv)); # mode quanta
+    printf("%15.12f %15.12f\n", sqrt($ev)*VaspToEv, $qi0);
+
     my @disps = split('\s+', trim($e_vectors[$i]));
 
     foreach (@displacements)
     {
+        print $poscar_fh sprintf("POSCAR: disp=%d, w=%8.5f meV, qi0=%5e\n", $_, sqrt($ev)*VaspToEv*1000, $qi0);
+        print $poscar_fh "1.00000\n";
+        print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $f[1], $f[2], $f[3]);
+        print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $f[4], $f[5], $f[6]);
+        print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $f[7], $f[8], $f[9]);
+        print $poscar_fh join(" ", uniq(@a_labels))."\n";
+        print $poscar_fh join(" ", @a_count)."\n";
+        print $poscar_fh "Direct\n";
+
         for( my $j = 0; $j < scalar(@a_cart_pos_x); $j++)
         {
-            my $sqrtm = sqrt($a[$j]);
+            my $sqrtm = sqrt($a_masses[$j]);
             my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_/$sqrtm, $disps[3*$j+1]*$qi0*$_/$sqrtm, $disps[3*$j+2]*$qi0*$_/$sqrtm);
-            #printf("%15.12f %15.12f %15.12f\n", $a_cart_pos_x[$j]+$dx, $a_cart_pos_y[$j]+$dy, $a_cart_pos_z[$j]+$dz);
+            print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $a_cart_pos_x[$j]+$dx, $a_cart_pos_y[$j]+$dy, $a_cart_pos_z[$j]+$dz);
         }
-        #print "\n";
+        print $poscar_fh "\n";
     }
     
 }
-#foreach my $attributes (keys %{$data}){
-#  print"$attributes : ${$data}{$attributes}\n";
-#}
 
 sub trim
 {
@@ -115,3 +114,5 @@ sub trim
    return $string;
 }
 
+# http://stackoverflow.com/questions/439647/how-do-i-print-unique-elements-in-perl-array
+sub uniq {local %_; grep {!$_{$_}++} @_}
