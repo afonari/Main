@@ -74,9 +74,10 @@ my @e_vectors = @{$data->{"calculation"}->{"dynmat"}->{"varray"}->{"eigenvectors
 
 open( my $poscar_fh, ">", "POSCAR-Big" ) || die "Can't open POSCAR-Big file: $!";
 
-my @displacements = (-2, -1, 1, 2); # hard-coded so far
+my @displacements = (-2, -1, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st deriv.
 for( my $i = 0; $i < scalar(@e_values); $i++)
 {
+    print "processing $i out ".scalar(@e_values)." eigenvalues\n";
     my $ev = $e_values[$i]*(-1.0);
     if($ev < 0.0){next;} # skip imaginary frequency
 
