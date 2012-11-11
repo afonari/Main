@@ -88,7 +88,8 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     if($ev < 0.0){next;} # skip imaginary frequency
 
     my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*VaspToEv)); # a quanta
-
+    printf("%10.6f", $qi0);
+    print "\n";
     my @disps = split('\s+', trim($e_vectors[$i]));
 
     foreach (@displacements)
@@ -97,9 +98,9 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
         {
             my $sqrtm = sqrt($a[$j]);
             my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_/$sqrtm, $disps[3*$j+1]*$qi0*$_/$sqrtm, $disps[3*$j+2]*$qi0*$_/$sqrtm);
-            printf("%15.12f %15.12f %15.12f\n", $a_cart_pos_x[$j]+$dx, $a_cart_pos_y[$j]+$dy, $a_cart_pos_z[$j]+$dz);
+            #printf("%15.12f %15.12f %15.12f\n", $a_cart_pos_x[$j]+$dx, $a_cart_pos_y[$j]+$dy, $a_cart_pos_z[$j]+$dz);
         }
-        print "\n";
+        #print "\n";
     }
     
 }
