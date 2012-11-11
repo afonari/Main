@@ -81,7 +81,7 @@ my @e_values = split('\s+', trim($data->{"calculation"}->{"dynmat"}->{"v"}->{"co
 my @e_vectors = @{$data->{"calculation"}->{"dynmat"}->{"varray"}->{"eigenvectors"}->{"v"}};
 #print Dumper(@e_vectors);
 
-my @disp = (-1, 1);
+my @displacements = (-2, -1, 1, 2);
 for( my $i = 0; $i < scalar(@e_values); $i++)
 {
     my $ev = $e_values[$i]*(-1.0);
@@ -91,13 +91,16 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
     my @disps = split('\s+', trim($e_vectors[$i]));
 
-    for( my $j = 0; $j < scalar(@a_cart_pos_x); $j++)
+    foreach (@displacements)
     {
-        my $sqrtm = sqrt($a[$j]);
-        my($dx, $dy, $dz) = ($disps[3*$j]*$qi0/$sqrtm, $disps[3*$j+1]*$qi0/$sqrtm, $disps[3*$j+2]*$qi0/$sqrtm);
-        printf("%15.12f %15.12f %15.12f\n", $dx, $dy, $dz);
+        for( my $j = 0; $j < scalar(@a_cart_pos_x); $j++)
+        {
+            my $sqrtm = sqrt($a[$j]);
+            my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_/$sqrtm, $disps[3*$j+1]*$qi0*$_/$sqrtm, $disps[3*$j+2]*$qi0*$_/$sqrtm);
+            printf("%15.12f %15.12f %15.12f\n", $a_cart_pos_x[$j]+$dx, $a_cart_pos_y[$j]+$dy, $a_cart_pos_z[$j]+$dz);
+        }
+        print "\n";
     }
-    print "\n";
     
 }
 #foreach my $attributes (keys %{$data}){
