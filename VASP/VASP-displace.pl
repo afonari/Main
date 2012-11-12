@@ -54,7 +54,7 @@ foreach (@t)
     push(@a_frac_pos_y, $t[1]);
     push(@a_frac_pos_z, $t[2]);
 }
-print Dumper(@a_frac_pos_x, @a_frac_pos_y, @a_frac_pos_z);
+# print Dumper(@a_frac_pos_x, @a_frac_pos_y, @a_frac_pos_z);
 
 # obtain Cartesian coordinates: Transpose(basis)*v:
 my (@a_cart_pos_x, @a_cart_pos_y, @a_cart_pos_z);
