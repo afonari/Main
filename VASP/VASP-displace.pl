@@ -1,19 +1,23 @@
 #!/usr/bin/env perl
 
+# Copyright (c) "2012, by Georgia Institute of Technology
+#                Contributors: Alexandr Fonari
+#                Affiliation: Dr. Bredas group
+#                URL: https://github.com/alexandr-fonari/Main/tree/master/VASP
+#                License: MIT License
+
 use strict;
 use warnings;
 use XML::Simple;
 use Data::Dumper;
 
-
 # physical constants in eV and Ang
-use constant HBAR => 6.58211915e-16;
-use constant CL => 2.99792458e18;
+use constant HBAR => 6.58211915e-16; # [eV s]
+use constant CL => 2.99792458e18;    # [A/s]
 use constant AM => 931.494043e6;
-
-use constant Angstrom => 1.0e-10;  # [m]
-use constant EV => 1.60217733e-19; # [J]
-use constant AMU => 1.6605402e-27; # [kg]
+use constant Angstrom => 1.0e-10;    # [m]
+use constant EV => 1.60217733e-19;   # [J]
+use constant AMU => 1.6605402e-27;   # [kg]
 use constant PI    => 4 * atan2(1, 1);
 use constant PlanckConstant => 4.13566733e-15; # [eV s]
 use constant VaspToEv => sqrt(EV/AMU)/Angstrom/(2*PI)*PlanckConstant; # [eV] 6.46541380e-2
@@ -50,9 +54,7 @@ foreach (@t)
     push(@a_frac_pos_y, $t[1]);
     push(@a_frac_pos_z, $t[2]);
 }
-#print Dumper(@a_frac_pos_x);
-#print Dumper(@a_frac_pos_y);
-#print Dumper(@a_frac_pos_z);
+print Dumper(@a_frac_pos_x, @a_frac_pos_y, @a_frac_pos_z);
 
 # obtain Cartesian coordinates: Transpose(basis)*v:
 my (@a_cart_pos_x, @a_cart_pos_y, @a_cart_pos_z);
