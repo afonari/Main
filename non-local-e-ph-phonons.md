@@ -12,7 +12,7 @@ Because method of the finite differences will be used to obtain *gi*, for reprod
 *q0* has units of length.
 
 #### Example
-For a choosen normal four displacements along a normal mode are made, for *q0* = -2, -1, 1, 2. The plot of energy (SCF calculation) with respect to displacement looks like this:  
+For a choosen normal four displacements along a normal mode are made, for *q0* = {-2, -1, 1, 2}. The plot of energy (SCF calculations) with respect to displacement looks like this:  
 ![Energy vs q0](https://raw.github.com/alexandr-fonari/Main/master/pics/e_vs_q0.png)  
 
 #### Acknowledgments and references
