@@ -4,11 +4,13 @@ Nonlocal el-ph coupling results from the interaction of the charge with lattice 
 where, *Qi* is dimensionless displacement, *t* is transfer integral computed for a pair of neighbouring molecules (units of energy), thus *gi* has units of energy.
 
 Also, small polaron binding energy is defined as:  
-![g_{i}](https://raw.github.com/alexandr-fonari/Main/master/pics/L.png)  
+![L](https://raw.github.com/alexandr-fonari/Main/master/pics/L.png)  
 *L* is dimensionless.
 
-Because finite difference method will be used to obtain *gi*, step should be defined in a unique way. 
-
+Because method of the finite differences will be used to obtain *gi*, for reproducibility purposes, step-size should be defined in a unique way. A natural choice is normal mode characteristic length defined as [2]:  
+![q0](https://raw.github.com/alexandr-fonari/Main/master/pics/q0.png)  
+*q0* has units of length.
 
 #### Acknowledgments and references
-[1] V. Coropceanu, *et al.*, *Chem. Rev.*, **107**, 926 (2007): [10.1021/cr050140x](http://pubs.acs.org/doi/abs/10.1021/cr050140x).
+1. V. Coropceanu, *et al.*, *Chem. Rev.*, **107**, 926 (2007): [10.1021/cr050140x](http://pubs.acs.org/doi/abs/10.1021/cr050140x).
+1. [Quantum harmonic oscillator](http://en.wikiversity.org/wiki/Quantum_harmonic_oscillator) @ Wikiversity.
