@@ -13,7 +13,7 @@ Because method of the finite differences will be used to obtain *gi*, for reprod
 
 #### Example
 For a choosen normal four displacements along a normal mode are made, for *q0* = -2, -1, 1, 2. The plot of energy (SCF calculation) with respect to displacement looks like this:  
-![Energy vs q0](https://raw.github.com/alexandr-fonari/Main/master/pics/e_vs_q1.png)  
+![Energy vs q0](https://raw.github.com/alexandr-fonari/Main/master/pics/e_vs_q0.png)  
 
 #### Acknowledgments and references
 1. V. Coropceanu, *et al.*, *Chem. Rev.*, **107**, 926 (2007): [10.1021/cr050140x](http://pubs.acs.org/doi/abs/10.1021/cr050140x).
