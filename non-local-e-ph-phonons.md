@@ -7,6 +7,8 @@ Also, small polaron binding energy is defined as:
 ![g_{i}](https://raw.github.com/alexandr-fonari/Main/master/pics/L.png)  
 *L* is dimensionless.
 
+Because finite difference method will be used to obtain *gi*, step should be defined in a unique way. 
+
 
 #### Acknowledgments and references
 [1] V. Coropceanu, *et al.*, *Chem. Rev.*, **107**, 926 (2007): [10.1021/cr050140x](http://pubs.acs.org/doi/abs/10.1021/cr050140x).
