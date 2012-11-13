@@ -4,6 +4,8 @@ Nonlocal el-ph coupling results from the interaction of the charge with lattice 
 where, *Qi* is dimensionless displacement, *t* is transfer integral computed for a pair of neighbouring molecules (units of energy), thus *gi* has units of energy.
 
 Also, small polaron binding energy is defined as:  
+![g_{i}](https://raw.github.com/alexandr-fonari/Main/master/pics/L.png)  
+*L* is dimensionless.
 
 
 #### Acknowledgments and references
