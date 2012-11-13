@@ -5,7 +5,7 @@ where, *Qi* is dimensionless displacement, *t* is transfer integral computed for
 
 Also, small polaron binding energy is defined as:  
 ![L](https://raw.github.com/alexandr-fonari/Main/master/pics/L.png)  
-*L* is dimensionless.
+*L* has units of energy.
 
 Because method of the finite differences will be used to obtain *gi*, for reproducibility purposes, step-size should be defined in a unique way. A natural choice is normal mode characteristic length defined as [2]:  
 ![q0](https://raw.github.com/alexandr-fonari/Main/master/pics/q0.png)  
