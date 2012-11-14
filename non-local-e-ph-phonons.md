@@ -12,8 +12,9 @@ Because method of the finite differences will be used to obtain *gi*, for reprod
 *q0* has units of length.
 
 #### Example
-For a choosen normal four displacements along a normal mode are made, for *q0* = {-2, -1, 1, 2}. The plot of energy (SCF calculations) with respect to displacement looks like this:  
+For a choosen normal (ω = 280.69053 meV) four displacements along a normal mode are made *q0* = {-2, -1, 1, 2}. The plot of energy (SCF calculations) with respect to displacement looks like this:  
 ![Energy vs q0](https://raw.github.com/alexandr-fonari/Main/master/pics/e_vs_q0.png)  
+If all calculations are done correctly, than ```ħω/2 = k```, where *k* is curvature of the parabola y=kx²/2. Comparing left side (0.14034 eV) with the right side (0.14108 eV) it could be concluded that both are approximately equal.
 
 #### Acknowledgments and references
 1. V. Coropceanu, *et al.*, *Chem. Rev.*, **107**, 926 (2007): [10.1021/cr050140x](http://pubs.acs.org/doi/abs/10.1021/cr050140x).
