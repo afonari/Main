@@ -12,7 +12,7 @@ Derivative in (1) can be evaluated numerically, (using finite difference method)
 *q0* has units of length.
 
 #### Example
-For a choosen normal (e.g. ```ω = 280.69053 meV```) four displacements along a normal mode are made ```q0 = {-2, -1, 1, 2}```. The plot of ground state energy (SCF calculation) with respect to displacement looks like this:  
+For a choosen normal (e.g. ```ħω = 0.28069053 eV```) four displacements along a normal mode are made ```q0 = {-2, -1, 1, 2}```. The plot of ground state energy (SCF calculation) with respect to displacement looks like this:  
 ![Energy vs q0](https://raw.github.com/alexandr-fonari/Main/master/pics/e_vs_q0.png)  
 If all calculations are done correctly, than  
 ```ħω/2 = k``` (4)  
