@@ -11,15 +11,15 @@ use warnings;
 use XML::Simple;
 use Data::Dumper;
 
-# physical constants in eV and Ang
-use constant HBAR => 6.58211915e-16; # [eV s]
+# physical constants in eV, Ang and s
+use constant PI => 4 * atan2(1, 1);
+use constant PlanckConstant => 4.135667516e-15; # [eV s]
+use constant HBAR => PlanckConstant/(2*PI); # [eV s]
 use constant CL => 2.99792458e18;    # [A/s]
 use constant AM => 931.494043e6;
 use constant Angstrom => 1.0e-10;    # [m]
 use constant EV => 1.60217733e-19;   # [J]
 use constant AMU => 1.6605402e-27;   # [kg]
-use constant PI    => 4 * atan2(1, 1);
-use constant PlanckConstant => 4.13566733e-15; # [eV s]
 use constant VaspToEv => sqrt(EV/AMU)/Angstrom/(2*PI)*PlanckConstant; # [eV] 6.46541380e-2
 
 my $xml = new XML::Simple();
@@ -74,7 +74,7 @@ my @e_values = split('\s+', trim($data->{"calculation"}->{"dynmat"}->{"v"}->{"co
 my @e_vectors = @{$data->{"calculation"}->{"dynmat"}->{"varray"}->{"eigenvectors"}->{"v"}};
 # print Dumper(@e_vectors);
 
-open( my $poscar_fh, ">", "POSCAR-Big" ) || die "Can't open POSCAR-Big file: $!";
+open( my $poscar_fh, ">", "DISPCAR" ) || die "Can't open DISPCAR file: $!";
 
 my @displacements = (-2, -1, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st deriv.
 for( my $i = 0; $i < scalar(@e_values); $i++)
@@ -109,6 +109,9 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     }
     
 }
+
+print "DISPCAR created\n";
+close($poscar_fh);
 
 sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
 
