@@ -1,7 +1,7 @@
-# VASP implementation
+## VASP implementation
 Currently, phonons can be obtained in a straightforward way only at Γ-point (there are other, *less* straight ways, to access phonons at different k-points)[1].
 
-## vasprun.xml
+#### vasprun.xml
 As the result of a phonon calculation (```IBRION = 5/6/7/8```), ```vasprun.xml``` will contain hessian matrix.
 
 #### Acknowledgments and references
