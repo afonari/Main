@@ -5,4 +5,4 @@ Georgia Institute of Technology (GT), Atlanta, GA, 30332-0400.
 
 ## Theory of charge transport
 [**Nonlocal electron-phonon coupling through calculation of phonons**](https://github.com/alexandr-fonari/Main/blob/master/nonlocal-e-ph-phonons.md):
- - [VASP implementation](https://github.com/alexandr-fonari/Main/blob/master/nonlocal-e-ph-phonons-VASP.md)
+ - [VASP implementation](https://github.com/alexandr-fonari/Main/blob/master/VASP/README.md)
