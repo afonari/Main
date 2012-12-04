@@ -152,10 +152,10 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
     foreach (@displacements)
     {
-        print $poscar_cart_fh sprintf("POSCAR: disp=%d, w=%8.5f meV, qi0=%5e\n", $_, $ev*CM2EV, $qi0);
+        print $poscar_cart_fh sprintf("POSCAR: disp=%d, w=%8.5f eV, qi0=%5e\n", $_, $ev*CM2EV, $qi0);
         print $poscar_cart_fh scalar(@a_labels)."\n";
 
-        print $poscar_recp_fh sprintf("POSCAR: disp=%d, w=%8.5f meV, qi0=%5e\n", $_, $ev*CM2EV, $qi0);
+        print $poscar_recp_fh sprintf("POSCAR: disp=%d, w=%8.5f eV, qi0=%5e\n", $_, $ev*CM2EV, $qi0);
         print $poscar_recp_fh "CRYSTAL\n";
         print $poscar_recp_fh "0 0 0\n";
         print $poscar_recp_fh "1\n";
