@@ -6,7 +6,7 @@
 #                URL: https://github.com/alexandr-fonari/Main/tree/master/CRYSTAL
 #                License: MIT License
 # Version 0.99
-#
+####### ===== ## =====
 # This is script is a fork of:
 #
 #   Program: xdatgen
@@ -165,10 +165,14 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
         for( my $j = 0; $j < scalar(@a_cart_pos_x); $j++)
         {
             my @pos = ($a_cart_pos_x[$j], $a_cart_pos_y[$j], $a_cart_pos_z[$j]);
-            my @dv = ($disps[3*$j], $disps[3*$j+1], $disps[3*$j+2]);
-            my $sqrtm = sqrt($a_masses[$j]);
 
-            my($dx, $dy, $dz) = ($dv[0]*$qi0*$_/$sqrtm, $dv[1]*$qi0*$_/$sqrtm, $dv[2]*$qi0*$_/$sqrtm);
+            my $sqrtm = sqrt($a_masses[$j]);
+            my @dv = ($disps[3*$j], $disps[3*$j+1], $disps[3*$j+2]);
+            
+
+            # for CRYSTAL normal modes are normlaized to classical amplitudes
+            $qi0 = 1/sqrt(2);
+            my($dx, $dy, $dz) = ($dv[0]*$qi0, $dv[1]*$qi0, $dv[2]*$qi0);
             print $poscar_cart_fh sprintf("%s %15.12f %15.12f %15.12f\n", $a_labels[$j], $pos[0]+$dx, $pos[1]+$dy, $pos[2]+$dz);
 
             @pos = cart2frac(\@pos, \@g);
