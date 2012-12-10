@@ -30,7 +30,7 @@ use constant CM2EV => 0.0001239842573148; # [eV]
 
 if ( scalar( @ARGV ) < 1 )
 {
-    die( "\nUse: $0 <freq.out> [-f <float factor>]\n" );
+    die( "\nUse: $0 <freq.out> <float factor>\n" );
 }
 open( my $outcar_fh, "<", $ARGV[0]) || die "$!\n";
 
