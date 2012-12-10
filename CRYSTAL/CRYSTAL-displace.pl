@@ -30,9 +30,15 @@ use constant CM2EV => 0.0001239842573148; # [eV]
 
 if ( scalar( @ARGV ) < 1 )
 {
-    die( "\nUse: $0 <freq.out>\n" );
+    die( "\nUse: $0 <freq.out> [-f <float factor>]\n" );
 }
 open( my $outcar_fh, "<", $ARGV[0]) || die "$!\n";
+
+my $fact = 1.0;
+if ( scalar( @ARGV ) == 2 )
+{
+    $fact = $ARGV[1];
+}
 
 # from http://cpansearch.perl.org/src/MKHRAPOV/Chemistry-MolecularMass-0.1/MolecularMass/MolecularMass.pm
 my %m = ("H" => 1.00794, "D" => 2.014101, "T" => 3.016049, "He" => 4.002602, "Li" => 6.941, "Be" => 9.012182, "B" => 10.811, "C" => 12.0107, "N" => 14.00674, "O" => 15.9994, "F" => 18.9984032, "Ne" => 20.1797, "Na" => 22.989770, "Mg" => 24.3050, "Al" => 26.981538, "Si" => 28.0855, "P" => 30.973761, "S" => 32.066, "Cl" => 35.4527, "Ar" => 39.948, "K" => 39.0983, "Ca" => 40.078, "Sc" => 44.955910, "Ti" => 47.867, "V" => 50.9415, "Cr" => 51.9961, "Mn" => 54.938049, "Fe" => 55.845, "Co" => 58.933200, "Ni" => 58.6934, "Cu" => 63.546, "Zn" => 65.39, "Ga" => 69.723, "Ge" => 72.61, "As" => 74.92160, "Se" => 78.96, "Br" => 79.904, "Kr" => 83.80, "Rb" => 85.4678, "Sr" => 87.62, "Y" => 88.90585, "Zr" => 91.224, "Nb" => 92.90638, "Mo" => 95.94, "Tc" => 98, "Ru" => 101.07, "Rh" => 102.90550, "Pd" => 106.42, "Ag" => 107.8682, "Cd" => 112.411, "In" => 114.818, "Sn" => 118.710, "Sb" => 121.760, "Te" => 127.60, "I" => 126.90447, "Xe" => 131.29, "Cs" => 132.90545, "Ba" => 137.327, "La" => 138.9055, "Ce" => 140.116, "Pr" => 140.90765, "Nd" => 144.24, "Pm" => 145, "Sm" => 150.36, "Eu" => 151.964, "Gd" => 157.25, "Tb" => 158.92534, "Dy" => 162.50, "Ho" => 164.93032, "Er" => 167.26, "Tm" => 168.93421, "Yb" => 173.04, "Lu" => 174.967, "Hf" => 178.49, "Ta" => 180.9479, "W" => 183.84, "Re" => 186.207, "Os" => 190.23, "Ir" => 192.217, "Pt" => 195.078, "Au" => 196.96655, "Hg" => 200.59, "Tl" => 204.3833, "Pb" => 207.2, "Bi" => 208.98038, "Po" => 209, "At" => 210, "Rn" => 222, "Fr" => 223, "Ra" => 226, "Ac" => 227, "Th" => 232.038, "Pa" => 231.03588, "U" => 238.0289, "Np" => 237, "Pu" => 244, "Am" => 243, "Cm" => 247, "Bk" => 247, "Cf" => 251, "Es" => 252, "Fm" => 257, "Md" => 258, "No" => 259, "Lr" => 262, "Rf" => 261, "Db" => 262, "Sg" => 266, "Bh" => 264, "Hs" => 269, "Mt" => 268, "Uun" => 271, "Uuu" => 272,);
@@ -133,7 +139,6 @@ while(my $line = <$outcar_fh>)
 close($outcar_fh);
 
 # my @x = ($a_cart_pos_x[2], $a_cart_pos_y[2], $a_cart_pos_z[2]);my @v = cart2frac(\@x, \@g);printf("%10.6f %10.6f %10.6f || %10.6f %10.6f %10.6f\n", $a_frac_pos_x[2], $a_frac_pos_y[2], $a_frac_pos_z[2], $v[0], $v[1], $v[2]);
-
 # print Dumper(@a_labels, @a_masses, @a_cart_pos_x, @a_cart_pos_y, @a_cart_pos_z);
 # print Dumper(@e_values, @e_vectors);
 
@@ -148,31 +153,31 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     if($ev < 0.0){next;} # skip imaginary frequency
 
     my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*CM2EV)); # characteristic length of a NM
-    my @disps = split('\s+', trim($e_vectors[$i]));
 
+    my @disps = split('\s+', trim($e_vectors[$i]));
     foreach (@displacements)
     {
-        print $poscar_cart_fh sprintf("POSCAR: disp=%d, w=%8.5f eV, qi0=%5e\n", $_, $ev*CM2EV, $qi0);
+        my $header = sprintf("POSCAR: disp=%d, w=%8.5f meV, qi0=%5e, f=%6.4f\n", $_, $ev*CM2EV*1000, $qi0, $fact);
+        print $poscar_cart_fh $header;
         print $poscar_cart_fh scalar(@a_labels)."\n";
 
-        print $poscar_recp_fh sprintf("POSCAR: disp=%d, w=%8.5f eV, qi0=%5e\n", $_, $ev*CM2EV, $qi0);
+        print $poscar_recp_fh $header;
         print $poscar_recp_fh "CRYSTAL\n";
         print $poscar_recp_fh "0 0 0\n";
         print $poscar_recp_fh "1\n";
         print $poscar_recp_fh join(" ", f2cell(\@f))."\n";
         print $poscar_recp_fh scalar(@a_labels)."\n";
 
+        # in CRYSTAL normal modes are normlaized to classical amplitudes
+        $qi0 = $qi0*$qi0*sqrt(2)*$fact;
+
         for( my $j = 0; $j < scalar(@a_cart_pos_x); $j++)
         {
-            my @pos = ($a_cart_pos_x[$j], $a_cart_pos_y[$j], $a_cart_pos_z[$j]);
-
             my $sqrtm = sqrt($a_masses[$j]);
+            my @pos = ($a_cart_pos_x[$j], $a_cart_pos_y[$j], $a_cart_pos_z[$j]);
             my @dv = ($disps[3*$j], $disps[3*$j+1], $disps[3*$j+2]);
-            
 
-            # for CRYSTAL normal modes are normlaized to classical amplitudes
-            $qi0 = 1/sqrt(2);
-            my($dx, $dy, $dz) = ($dv[0]*$qi0, $dv[1]*$qi0, $dv[2]*$qi0);
+            my ($dx, $dy, $dz) = ($dv[0]*$qi0*$_/$sqrtm, $dv[1]*$qi0*$_/$sqrtm, $dv[2]*$qi0*$_/$sqrtm);
             print $poscar_cart_fh sprintf("%s %15.12f %15.12f %15.12f\n", $a_labels[$j], $pos[0]+$dx, $pos[1]+$dy, $pos[2]+$dz);
 
             @pos = cart2frac(\@pos, \@g);
@@ -180,12 +185,10 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
             ($dx, $dy, $dz) = ($dv[0]*$qi0*$_/$sqrtm, $dv[1]*$qi0*$_/$sqrtm, $dv[2]*$qi0*$_/$sqrtm);
 
             print $poscar_recp_fh sprintf("%s %15.12f %15.12f %15.12f\n", $a_indx[$j], $pos[0]+$dx, $pos[1]+$dy, $pos[2]+$dz);
-
         }
         print $poscar_cart_fh "\n";
         print $poscar_recp_fh "\n";
     }
-    
 }
 
 print "DISPCAR files have been created.\n\n";
