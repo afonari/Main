@@ -155,9 +155,9 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*CM2EV)); # characteristic length of a NM
 
     my @disps = split('\s+', trim($e_vectors[$i]));
-    foreach (@displacements)
+    foreach my $d (@displacements)
     {
-        my $header = sprintf("POSCAR: disp=%d, w=%8.5f meV, qi0=%5e, f=%6.4f\n", $_, $ev*CM2EV*1000, $qi0, $fact);
+        my $header = sprintf("POSCAR: disp=%d, w=%8.5f meV, qi0=%5e, f=%6.4f\n", $d, $ev*CM2EV*1000, $qi0, $fact);
         print $poscar_cart_fh $header;
         print $poscar_cart_fh scalar(@a_labels)."\n";
 
@@ -169,7 +169,8 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
         print $poscar_recp_fh scalar(@a_labels)."\n";
 
         # in CRYSTAL normal modes are normlaized to classical amplitudes
-        $qi0 = $qi0*$qi0*sqrt(2)*$fact;
+        # which expressed via qi0 gives: Sqrt(2E/k) = qi0*Sqrt(2)
+        my $qi0_cry = $qi0*$qi0*sqrt(2)*$fact;
 
         for( my $j = 0; $j < scalar(@a_cart_pos_x); $j++)
         {
@@ -177,14 +178,15 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
             my @pos = ($a_cart_pos_x[$j], $a_cart_pos_y[$j], $a_cart_pos_z[$j]);
             my @dv = ($disps[3*$j], $disps[3*$j+1], $disps[3*$j+2]);
 
-            my ($dx, $dy, $dz) = ($dv[0]*$qi0*$_/$sqrtm, $dv[1]*$qi0*$_/$sqrtm, $dv[2]*$qi0*$_/$sqrtm);
-            print $poscar_cart_fh sprintf("%s %15.12f %15.12f %15.12f\n", $a_labels[$j], $pos[0]+$dx, $pos[1]+$dy, $pos[2]+$dz);
+            @dv = map { $_*$qi0*$d/$sqrtm } @dv;
+            # my ($dx, $dy, $dz) = ($dv[0]*$qi0*$_/$sqrtm, $dv[1]*$qi0*$_/$sqrtm, $dv[2]*$qi0*$_/$sqrtm);
+            print $poscar_cart_fh sprintf("%s %15.12f %15.12f %15.12f\n", $a_labels[$j], $pos[0]+$dv[0], $pos[1]+$dv[1], $pos[2]+$dv[2]);
 
             @pos = cart2frac(\@pos, \@g);
             @dv = cart2frac(\@dv, \@g);
-            ($dx, $dy, $dz) = ($dv[0]*$qi0*$_/$sqrtm, $dv[1]*$qi0*$_/$sqrtm, $dv[2]*$qi0*$_/$sqrtm);
+            # ($dx, $dy, $dz) = ($dv[0]*$qi0*$_/$sqrtm, $dv[1]*$qi0*$_/$sqrtm, $dv[2]*$qi0*$_/$sqrtm);
 
-            print $poscar_recp_fh sprintf("%s %15.12f %15.12f %15.12f\n", $a_indx[$j], $pos[0]+$dx, $pos[1]+$dy, $pos[2]+$dz);
+            print $poscar_recp_fh sprintf("%s %15.12f %15.12f %15.12f\n", $a_indx[$j], $pos[0]+$dv[0], $pos[1]+$dv[1], $pos[2]+$dv[2]);
         }
         print $poscar_cart_fh "\n";
         print $poscar_recp_fh "\n";
