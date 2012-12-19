@@ -16,7 +16,7 @@ Derivative in (1) can be evaluated numerically, (using finite difference method)
 For a choosen normal (e.g. ```ħω = 0.28069053 eV```) four displacements along a normal mode are made ```q0 = {-2, -1, 1, 2}```. The plot of ground state energy (SCF calculation) with respect to displacement looks like this:  
 ![Energy vs q0](https://raw.github.com/alexandr-fonari/Main/master/pics/e_vs_q0.png)  
 If all calculations are done correctly, than  
-```ħω/2 = k``` (4)  
+```ħω/2 = kx²/2 = ax²``` => ```ħω/2 = a``` (4)  
 where *k* is curvature of the parabola ```y=kx²/2```. Comparing left side (0.14034 eV) with the right side (0.14108 eV) of (4) it could be concluded that both are approximately equal.
 
 ### ⇰ Acknowledgments and references
