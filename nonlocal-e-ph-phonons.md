@@ -17,7 +17,7 @@ For a choosen normal (e.g. ```ħω = 0.28069053 eV```) four displacements along 
 ![Energy vs q0](https://raw.github.com/alexandr-fonari/Main/master/pics/e_vs_q0.png)  
 If all calculations are done correctly, than  
 ```ħω/2 = kx²/2 = ax²``` => ```ħω/2 = a``` (4)  
-where *k* is curvature of the parabola ```y=kx²/2```. Comparing left side (0.14034 eV) with the right side (0.14108 eV) of (4) it could be concluded that both are approximately equal.
+Comparing values from left (0.14034 eV) and right (0.14108 eV) side of (4) it could be concluded that both are approximately equal.
 
 ### ⇰ Acknowledgments and references
 1. V. Coropceanu, *et al.*, *Chem. Rev.*, **107**, 926 (2007): [10.1021/cr050140x](http://dx.doi.org/10.1021/cr050140x).
