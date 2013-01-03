@@ -157,7 +157,11 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     my @disps = split('\s+', trim($e_vectors[$i]));
     foreach my $d (@displacements)
     {
-        my $header = sprintf("POSCAR: disp=%d, w=%8.5f meV, qi0=%5e, f=%6.4f\n", $d, $ev*CM2EV*1000, $qi0, $fact);
+        # in CRYSTAL normal modes are normlaized to classical amplitudes
+        # which expressed via qi0 gives: Sqrt(2E/k) = qi0*Sqrt(2)
+        my $qi0_cry = $qi0*$qi0*sqrt(2)*$fact;
+
+        my $header = sprintf("POSCAR: disp=%d, w=%8.5f meV, qi0=%5e, f=%6.4f\n", $d, $ev*CM2EV*1000, $qi0_cry, $fact);
         print $poscar_cart_fh $header;
         print $poscar_cart_fh scalar(@a_labels)."\n";
 
@@ -167,10 +171,6 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
         print $poscar_recp_fh "1\n";
         print $poscar_recp_fh join(" ", f2cell(\@f))."\n";
         print $poscar_recp_fh scalar(@a_labels)."\n";
-
-        # in CRYSTAL normal modes are normlaized to classical amplitudes
-        # which expressed via qi0 gives: Sqrt(2E/k) = qi0*Sqrt(2)
-        my $qi0_cry = $qi0*$qi0*sqrt(2)*$fact;
 
         for( my $j = 0; $j < scalar(@a_cart_pos_x); $j++)
         {
