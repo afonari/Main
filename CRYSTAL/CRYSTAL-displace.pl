@@ -178,7 +178,7 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
             my @pos = ($a_cart_pos_x[$j], $a_cart_pos_y[$j], $a_cart_pos_z[$j]);
             my @dv = ($disps[3*$j], $disps[3*$j+1], $disps[3*$j+2]);
 
-            @dv = map { $_*$qi0*$d/$sqrtm } @dv;
+            @dv = map { $_*$qi0_cry*$d/$sqrtm } @dv;
             # my ($dx, $dy, $dz) = ($dv[0]*$qi0*$_/$sqrtm, $dv[1]*$qi0*$_/$sqrtm, $dv[2]*$qi0*$_/$sqrtm);
             print $poscar_cart_fh sprintf("%s %15.12f %15.12f %15.12f\n", $a_labels[$j], $pos[0]+$dv[0], $pos[1]+$dv[1], $pos[2]+$dv[2]);
 
@@ -197,7 +197,7 @@ print "DISPCAR files have been created.\n\n";
 close($poscar_cart_fh);
 close($poscar_recp_fh);
 
-
+# SUBs
 sub get_g
 {
     my ($cell) = shift;
