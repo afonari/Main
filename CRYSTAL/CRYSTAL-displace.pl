@@ -152,12 +152,14 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     my $ev = $e_values[$i];
     if($ev < 0.0){next;} # skip imaginary frequency
 
-    my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*CM2EV)); # characteristic length of a NM
+    my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*CM2EV)); # characteristic length of a normal mode.
+                                                 # Will divide by square root of atomic mass later in the code.
+    my $amp = sqrt(2*HBAR*CL/sqrt(AM));
 
     my @disps = split('\s+', trim($e_vectors[$i]));
     foreach my $d (@displacements)
     {
-        my $header = sprintf("POSCAR: disp=%d, w=%8.5f meV, qi0=%5e, f=%6.4f\n", $d, $ev*CM2EV*1000, $qi0, $fact);
+        my $header = sprintf("POSCAR: disp= %d, w= %8.5f meV, qi0= %5e, amp= %5e, f= %6.4f\n", $d, $ev*CM2EV*1000, $qi0, $amp, $fact);
         print $poscar_cart_fh $header;
         print $poscar_cart_fh scalar(@a_labels)."\n";
 
@@ -181,11 +183,11 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
             # dividing by square roots of the mass as follows from the characteristic length and amplitude formulas
             @dv = map { $_*$qi0_cry*$d/($sqrtm*sqrt($sqrtm)) } @dv;
             @pos = ($pos[0]+$dv[0], $pos[1]+$dv[1], $pos[2]+$dv[2]);
-            print $poscar_cart_fh sprintf("%s %15.12f %15.12f %15.12f\n", $a_labels[$j], @pos);
+            print $poscar_cart_fh sprintf("%s %3d %15.12f %15.12f %15.12f\n", $a_labels[$j], $j+1, @pos);
 
-            my @pos_recp = cart2frac(\@pos, \@g);
+            my @pos_frac = cart2frac(\@pos, \@g);
 
-            print $poscar_recp_fh sprintf("%s %15.12f %15.12f %15.12f\n", $a_indx[$j], @pos_recp);
+            print $poscar_recp_fh sprintf("%s%d %15.12f %15.12f %15.12f\n", $a_labels[$j], $j+1, @pos_frac);
         }
         print $poscar_cart_fh "\n";
         print $poscar_recp_fh "\n";
