@@ -74,7 +74,7 @@ while(my $line = <$outcar_fh>)
 
             #1 T   6 C     4.456257629770E-01 -6.634854933763E-02  8.739963058621E-02
             my @t = split('\s+', $line);
-            #push(@a_masses, ucfirst($m{$t[2]}));
+            push(@a_masses, ucfirst($m{$t[2]}));
             push(@a_indx, $t[2]);
             push(@a_frac_pos_x, $t[4]);
             push(@a_frac_pos_y, $t[5]);
