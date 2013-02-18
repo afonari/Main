@@ -1,4 +1,18 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
+
+# Copyright (c) "2012, by Georgia Institute of Technology
+#                Contributors: Alexandr Fonari
+#                Affiliation: Dr. Bredas group
+#                URL: https://github.com/alexandr-fonari/Main/tree/master/CRYSTAL
+#                License: MIT License
+# Version 1.0
+#
+# Program converts CRYSTAL output into CIF file.
+# Output from ionic relaxation is supported,
+# and will result in CIF with many structures (as many as ionic steps)
+# CIF file can be opened with CSD Mercury (c).
+#
+
 
 use strict; 
 use warnings;
@@ -70,7 +84,7 @@ while(my $line = <$outcar_fh>)
 close($outcar_fh);
 close($cif_fh);
 
-print "\n\ncry2cif.pl V. 1.0. File $ARGV[0].cif created. Job done.\n\n";
+print "\ncry2cif.pl V. 1.0.\nFile $ARGV[0].cif created.\nJob done.\n\n";
 
 # SUBs
 sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
