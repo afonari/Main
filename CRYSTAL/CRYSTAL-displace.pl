@@ -145,7 +145,7 @@ close($outcar_fh);
 open( my $poscar_cart_fh, ">", "DISPCAR_cart" ) || die "Can't open DISPCAR_cart file: $!";
 open( my $poscar_recp_fh, ">", "DISPCAR_recp" ) || die "Can't open DISPCAR_resp file: $!";
 
-my @displacements = (-2, -1, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st deriv.
+my @displacements = (-2, -1, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st derivative.
 for( my $i = 0; $i < scalar(@e_values); $i++)
 {
     print "processing ".($i+1)." out ".scalar(@e_values)." eigenvalues\n";
@@ -154,7 +154,7 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
     my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*CM2EV)); # characteristic length of a normal mode.
                                                  # Will divide by square root of atomic mass later in the code.
-    my $amp = sqrt(2*HBAR*CL/sqrt(AM));
+    my $amp = sqrt(2*HBAR*CL/sqrt(AM));          # classical amplitude
 
     my @disps = split('\s+', trim($e_vectors[$i]));
     foreach my $d (@displacements)
