@@ -157,12 +157,10 @@ $f1_atoms = dirkar($f1_atoms,$basis,scalar(@f1_labels));
 $f2_atoms = dirkar($f2_atoms,$basis,scalar(@f2_labels));
 
 open( my $poscar_cart_fh, ">", "DISPCAR_cart" ) || die "Can't open DISPCAR_cart file: $!";
-open( my $poscar_recp_fh, ">", "DISPCAR_recp" ) || die "Can't open DISPCAR_resp file: $!";
 
 my @displacements = (-2, -1, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st derivative.
 for( my $i = 0; $i < scalar(@e_values); $i++)
 {
-    my ($frag1_out, $frag2_out);
     print "processing ".($i+1)." out of ".scalar(@e_values)." eigenvalues\n";
     my $ev = $e_values[$i];
     if($ev < 0.0){next;} # skip imaginary frequency
@@ -174,9 +172,9 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     my @disps = split('\s+', trim($e_vectors[$i]));
     foreach my $d (@displacements)
     {
+        my ($frag1_out, $frag2_out);
         my $header = sprintf("POSCAR: disp= %d, w= %8.5f meV, qi0= %5e, amp= %5e, f= %6.4f\n", $d, $ev*CM2EV*1000, $qi0, $amp, $fact);
         print $poscar_cart_fh $header;
-        print $poscar_recp_fh $header;
 
         for( my $j = 0; $j < $total_atoms; $j++)
         {
@@ -189,19 +187,19 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
             my @pos = ($coordinates->[$j][0]+$dv[0], $coordinates->[$j][1]+$dv[1], $coordinates->[$j][2]+$dv[2]);
 
-            #if(exists($frag1_atoms{"$a_labels[$j]$a_indx[$j]"}))
-            #{
-            #    $frag1_out .= sprintf("%s %15.12f %15.12f %15.12f\n", "$a_labels[$j]$a_indx[$j]", @pos);
-            #}
-            #elsif (exists($frag2_atoms{"$a_labels[$j]$a_indx[$j]"}))
-            #{
-            #    $frag2_out .= sprintf("%s %15.12f %15.12f %15.12f\n", "$a_labels[$j]$a_indx[$j]", @pos);
-            #}
+            my $atom_name = $atoms->[$j]{"label"}.$atoms->[$j]{"indx"};
+            if($atom_name ~~ @f1_labels)
+            {
+                $frag1_out .= sprintf("%s %9.5f %9.5f %9.5f\n", $atom_name, @pos);
+            }
+            elsif($atom_name ~~ @f2_labels)
+            {
+                $frag2_out .= sprintf("%s %9.5f %9.5f %9.5f\n", $atom_name, @pos);
+            }
         }
         print $poscar_cart_fh $frag1_out;
         print $poscar_cart_fh "NEXT_FRAG\n";
         print $poscar_cart_fh $frag2_out;
-        print $poscar_cart_fh "\n";
     }
 }
 
