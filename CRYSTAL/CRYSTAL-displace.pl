@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+#;-*- Perl -*-
 
 # Copyright (c) "2012, by Georgia Institute of Technology
 #                Contributors: Alexandr Fonari
@@ -15,7 +16,7 @@
 #   ver 0.5  4. June 2007
 #   url: http://www.uni-due.de/~hp0058/vmdplugins/utilities/xdatgen.c
 #
-# it is heavily based on:
+# it is heavily based on (some SUBs are copy/pasted):
 # http://theory.cm.utexas.edu/vasp/scripts/src/Vasp.pm
 #
 #### I hope you will like it! ####
@@ -39,25 +40,31 @@ if ( scalar( @ARGV ) < 1 )
 }
 open( my $outcar_fh, "<", $ARGV[0]) || die "Can't open $ARGV[0]: $!\n";
 
-my %frag1_atoms;
-open( my $frag1_fh, "<", frag1.list) || die "Can't open frag1.list: $!\n";
-while(my $line = <$frag1_fh>)
+my (@f1_labels, $f1_atoms);
+open( my $f1_fh, "<", "frag1.list") || die "Can't open frag1.list: $!\n";
+while(my $line = <$f1_fh>)
 {
     $line = trim($line);
-    my ($label, $rest) = split /\s+/, $line, 2;
-    my @coords = split '\s+', $rest;
-    $frag1_atoms{$label} = [ @coords ];
-}
-close($frag1_fh);
+    my ($label, @rest) = split /\s+/, $line;
+    my $i = push(@f1_labels, $label) - 1; # getting list length-1 in $i
 
-my %frag2_atoms;
-open( my $frag2_fh, "<", frag2.list) || die "Can't open frag2.list: $!\n";
-while(my $line = <$frag2_fh>)
+    $f1_atoms->[$i][0] = $rest[1];
+    $f1_atoms->[$i][1] = $rest[2];
+    $f1_atoms->[$i][2] = $rest[3];
+}
+close($f1_fh);
+
+my (@f2_labels, $f2_atoms);
+open( my $f2_fh, "<", "frag2.list") || die "Can't open frag2.list: $!\n";
+while(my $line = <$f2_fh>)
 {
     $line = trim($line);
     my ($label, $rest) = split /\s+/, $line, 2;
-    my @coords = split '\s+', $rest;
-    $frag2_atoms{$label} = [ @coords ];
+    my $i = push(@f2_labels, $label) - 1; # getting list length-1 in $i
+
+    $f2_atoms->[$i][0] = $rest[1];
+    $f2_atoms->[$i][1] = $rest[2];
+    $f2_atoms->[$i][2] = $rest[3];
 }
 close($frag2_fh);
 
@@ -104,7 +111,7 @@ while(my $line = <$outcar_fh>)
 
             #  1     6 C     3.261901092826E+00 -9.881441284132E-01  9.509079807780E-01
             my @temp = split('\s+', $line);
-            push(@a_indx, $temp[1]);
+            push(@a_indx, $temp[0]);
             push(@a_labels, ucfirst($temp[2]));
             push(@a_masses, ucfirst($m{$temp[2]}));
 
@@ -146,11 +153,12 @@ close($outcar_fh);
 # print Dumper(@e_values, @e_vectors);
 
 open( my $poscar_cart_fh, ">", "DISPCAR_cart" ) || die "Can't open DISPCAR_cart file: $!";
-# open( my $poscar_recp_fh, ">", "DISPCAR_recp" ) || die "Can't open DISPCAR_resp file: $!";
+open( my $poscar_recp_fh, ">", "DISPCAR_recp" ) || die "Can't open DISPCAR_resp file: $!";
 
 my @displacements = (-2, -1, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st derivative.
 for( my $i = 0; $i < scalar(@e_values); $i++)
 {
+    my ($frag1_out, $frag2_out);
     print "processing ".($i+1)." out of ".scalar(@e_values)." eigenvalues\n";
     my $ev = $e_values[$i];
     if($ev < 0.0){next;} # skip imaginary frequency
@@ -164,23 +172,31 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     {
         my $header = sprintf("POSCAR: disp= %d, w= %8.5f meV, qi0= %5e, amp= %5e, f= %6.4f\n", $d, $ev*CM2EV*1000, $qi0, $amp, $fact);
         print $poscar_cart_fh $header;
+        print $poscar_recp_fh $header;
 
         for( my $j = 0; $j < $total_atoms; $j++)
         {
             my $sqrtm = sqrt($a_masses[$j]);
-            my @pos = ($coordinates->[$j][0], $coordinates->[$j][1], $coordinates->[$j][2]);
-            my @dv = ($disps[3*$j], $disps[3*$j+1], $disps[3*$j+2]);
-
             # in CRYSTAL normal modes are normlaized (divided by) to classical amplitudes: A=Sqrt(2E/k)
             # thus, displacement will be: dx = dx_orig*A*qi0
-            my $qi0_cry = $fact*$qi0*sqrt(2*HBAR*CL/sqrt(AM));
+            # also, dividing by square roots of the mass as follows from the characteristic length and amplitude formulas
+            my $qi0_cry = $fact*$qi0*sqrt(2*HBAR*CL/sqrt(AM))*$d/($sqrtm*sqrt($sqrtm));
 
-            # dividing by square roots of the mass as follows from the characteristic length and amplitude formulas
-            @dv = map { $_*$qi0_cry*$d/($sqrtm*sqrt($sqrtm)) } @dv;
-            @pos = ($pos[0]+$dv[0], $pos[1]+$dv[1], $pos[2]+$dv[2]);
-            print $poscar_cart_fh sprintf("%s %3d %15.12f %15.12f %15.12f\n", $a_labels[$j], $j+1, @pos);
+            my @dv = ($disps[3*$j], $disps[3*$j+1], $disps[3*$j+2]);
+            my @pos = ($coordinates->[$j][0]+$dv[0], $coordinates->[$j][1]+$dv[1], $coordinates->[$j][2]+$dv[2]);
 
+            #if(exists($frag1_atoms{"$a_labels[$j]$a_indx[$j]"}))
+            #{
+            #    $frag1_out .= sprintf("%s %15.12f %15.12f %15.12f\n", "$a_labels[$j]$a_indx[$j]", @pos);
+            #}
+            #elsif (exists($frag2_atoms{"$a_labels[$j]$a_indx[$j]"}))
+            #{
+            #    $frag2_out .= sprintf("%s %15.12f %15.12f %15.12f\n", "$a_labels[$j]$a_indx[$j]", @pos);
+            #}
         }
+        print $poscar_cart_fh $frag1_out;
+        print $poscar_cart_fh "NEXT_FRAG\n";
+        print $poscar_cart_fh $frag2_out;
         print $poscar_cart_fh "\n";
     }
 }
@@ -191,8 +207,23 @@ close($poscar_cart_fh);
 
 # SUBs
 sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
-# http://stackoverflow.com/questions/10193750/perl-count-unique-elements-in-array
-# counts consistently uniq and count_uniq, important for VASP
-sub uniq       {my %c; my @u = grep !$c{$_}++, @_; keys(%c);}
-sub count_uniq {my %c; my @u = grep !$c{$_}++, @_; values(%c);}
+sub dirkar {
+    my $vector = shift;
+    my $basis = shift;
+    my $lattice = shift;
+    my $total_atoms = shift;
+
+    my ($i,$v1,$v2,$v3);
+
+    for ($i=0; $i<$total_atoms; $i++) {
+        $v1 = $vector->[$i][0]*$basis->[0][0] + $vector->[$i][1]*$basis->[0][1] + $vector->[$i][2]*$basis->[0][2];
+        $v2 = $vector->[$i][0]*$basis->[1][0] + $vector->[$i][1]*$basis->[1][1] + $vector->[$i][2]*$basis->[1][2];
+        $v3 = $vector->[$i][0]*$basis->[2][0] + $vector->[$i][1]*$basis->[2][1] + $vector->[$i][2]*$basis->[2][2];
+        $vector->[$i][0] = $v1;
+        $vector->[$i][1] = $v2;
+        $vector->[$i][2] = $v3;
+    }
+
+    return ($vector);
+}
 
