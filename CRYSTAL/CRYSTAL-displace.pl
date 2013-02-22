@@ -59,14 +59,14 @@ open( my $f2_fh, "<", "frag2.list") || die "Can't open frag2.list: $!\n";
 while(my $line = <$f2_fh>)
 {
     $line = trim($line);
-    my ($label, $rest) = split /\s+/, $line, 2;
+    my ($label, @rest) = split /\s+/, $line;
     my $i = push(@f2_labels, $label) - 1; # getting list length-1 in $i
 
     $f2_atoms->[$i][0] = $rest[1];
     $f2_atoms->[$i][1] = $rest[2];
     $f2_atoms->[$i][2] = $rest[3];
 }
-close($frag2_fh);
+close($f2_fh);
 
 my $fact = 1.0;
 if ( scalar( @ARGV ) == 2 )
@@ -77,7 +77,7 @@ if ( scalar( @ARGV ) == 2 )
 # from http://cpansearch.perl.org/src/MKHRAPOV/Chemistry-MolecularMass-0.1/MolecularMass/MolecularMass.pm
 my %m = ("H" => 1.00794, "D" => 2.014101, "T" => 3.016049, "He" => 4.002602, "Li" => 6.941, "Be" => 9.012182, "B" => 10.811, "C" => 12.0107, "N" => 14.00674, "O" => 15.9994, "F" => 18.9984032, "Ne" => 20.1797, "Na" => 22.989770, "Mg" => 24.3050, "Al" => 26.981538, "Si" => 28.0855, "P" => 30.973761, "S" => 32.066, "Cl" => 35.4527, "Ar" => 39.948, "K" => 39.0983, "Ca" => 40.078, "Sc" => 44.955910, "Ti" => 47.867, "V" => 50.9415, "Cr" => 51.9961, "Mn" => 54.938049, "Fe" => 55.845, "Co" => 58.933200, "Ni" => 58.6934, "Cu" => 63.546, "Zn" => 65.39, "Ga" => 69.723, "Ge" => 72.61, "As" => 74.92160, "Se" => 78.96, "Br" => 79.904, "Kr" => 83.80, "Rb" => 85.4678, "Sr" => 87.62, "Y" => 88.90585, "Zr" => 91.224, "Nb" => 92.90638, "Mo" => 95.94, "Tc" => 98, "Ru" => 101.07, "Rh" => 102.90550, "Pd" => 106.42, "Ag" => 107.8682, "Cd" => 112.411, "In" => 114.818, "Sn" => 118.710, "Sb" => 121.760, "Te" => 127.60, "I" => 126.90447, "Xe" => 131.29, "Cs" => 132.90545, "Ba" => 137.327, "La" => 138.9055, "Ce" => 140.116, "Pr" => 140.90765, "Nd" => 144.24, "Pm" => 145, "Sm" => 150.36, "Eu" => 151.964, "Gd" => 157.25, "Tb" => 158.92534, "Dy" => 162.50, "Ho" => 164.93032, "Er" => 167.26, "Tm" => 168.93421, "Yb" => 173.04, "Lu" => 174.967, "Hf" => 178.49, "Ta" => 180.9479, "W" => 183.84, "Re" => 186.207, "Os" => 190.23, "Ir" => 192.217, "Pt" => 195.078, "Au" => 196.96655, "Hg" => 200.59, "Tl" => 204.3833, "Pb" => 207.2, "Bi" => 208.98038, "Po" => 209, "At" => 210, "Rn" => 222, "Fr" => 223, "Ra" => 226, "Ac" => 227, "Th" => 232.038, "Pa" => 231.03588, "U" => 238.0289, "Np" => 237, "Pu" => 244, "Am" => 243, "Cm" => 247, "Bk" => 247, "Cf" => 251, "Es" => 252, "Fm" => 257, "Md" => 258, "No" => 259, "Lr" => 262, "Rf" => 261, "Db" => 262, "Sg" => 266, "Bh" => 264, "Hs" => 269, "Mt" => 268, "Uun" => 271, "Uuu" => 272,);
 
-my (@a_masses, @a_labels, $total_atoms, $total_freqs, @a_indx, $basis, $coordinates, @e_values, @e_vectors);
+my ($atoms, $total_atoms, $total_freqs, $basis, $coordinates, @e_values, @e_vectors);
 
 while(my $line = <$outcar_fh>)
 {
@@ -111,9 +111,10 @@ while(my $line = <$outcar_fh>)
 
             #  1     6 C     3.261901092826E+00 -9.881441284132E-01  9.509079807780E-01
             my @temp = split('\s+', $line);
-            push(@a_indx, $temp[0]);
-            push(@a_labels, ucfirst($temp[2]));
-            push(@a_masses, ucfirst($m{$temp[2]}));
+            $atoms->[$i]{"indx"} = $temp[0];
+            $atoms->[$i]{"number"} = $temp[1];
+            $atoms->[$i]{"label"} = $temp[2];
+            $atoms->[$i]{"mass"} = $m{$temp[2]};
 
             $coordinates->[$i][0] = $temp[3]; # x
             $coordinates->[$i][1] = $temp[4]; # y
@@ -152,6 +153,9 @@ close($outcar_fh);
 # print Dumper(@a_labels, @a_masses, @a_cart_pos_x, @a_cart_pos_y, @a_cart_pos_z);
 # print Dumper(@e_values, @e_vectors);
 
+$f1_atoms = dirkar($f1_atoms,$basis,scalar(@f1_labels));
+$f2_atoms = dirkar($f2_atoms,$basis,scalar(@f2_labels));
+
 open( my $poscar_cart_fh, ">", "DISPCAR_cart" ) || die "Can't open DISPCAR_cart file: $!";
 open( my $poscar_recp_fh, ">", "DISPCAR_recp" ) || die "Can't open DISPCAR_resp file: $!";
 
@@ -176,13 +180,13 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
         for( my $j = 0; $j < $total_atoms; $j++)
         {
-            my $sqrtm = sqrt($a_masses[$j]);
+            my $sqrtm = sqrt($atoms->[$j]{"mass"});
             # in CRYSTAL normal modes are normlaized (divided by) to classical amplitudes: A=Sqrt(2E/k)
             # thus, displacement will be: dx = dx_orig*A*qi0
             # also, dividing by square roots of the mass as follows from the characteristic length and amplitude formulas
             my $qi0_cry = $fact*$qi0*sqrt(2*HBAR*CL/sqrt(AM))*$d/($sqrtm*sqrt($sqrtm));
-
             my @dv = ($disps[3*$j], $disps[3*$j+1], $disps[3*$j+2]);
+
             my @pos = ($coordinates->[$j][0]+$dv[0], $coordinates->[$j][1]+$dv[1], $coordinates->[$j][2]+$dv[2]);
 
             #if(exists($frag1_atoms{"$a_labels[$j]$a_indx[$j]"}))
@@ -210,7 +214,6 @@ sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
 sub dirkar {
     my $vector = shift;
     my $basis = shift;
-    my $lattice = shift;
     my $total_atoms = shift;
 
     my ($i,$v1,$v2,$v3);
