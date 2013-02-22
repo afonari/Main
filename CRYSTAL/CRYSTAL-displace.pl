@@ -40,31 +40,39 @@ if ( scalar( @ARGV ) < 1 )
 }
 open( my $outcar_fh, "<", $ARGV[0]) || die "Can't open $ARGV[0]: $!\n";
 
-my (@f1_labels, $f1_atoms);
+my (%f1_labels, $f1_atoms);
 open( my $f1_fh, "<", "frag1.list") || die "Can't open frag1.list: $!\n";
+
+my $iter = 0;
 while(my $line = <$f1_fh>)
 {
     $line = trim($line);
     my ($label, @rest) = split /\s+/, $line;
-    my $i = push(@f1_labels, $label) - 1; # getting list length-1 in $i
+    $f1_labels{$label} = $iter;
 
-    $f1_atoms->[$i][0] = $rest[1];
-    $f1_atoms->[$i][1] = $rest[2];
-    $f1_atoms->[$i][2] = $rest[3];
+    $f1_atoms->[$iter][0] = $rest[1];
+    $f1_atoms->[$iter][1] = $rest[2];
+    $f1_atoms->[$iter][2] = $rest[3];
+
+    $iter++;
 }
 close($f1_fh);
 
-my (@f2_labels, $f2_atoms);
+my (%f2_labels, $f2_atoms);
 open( my $f2_fh, "<", "frag2.list") || die "Can't open frag2.list: $!\n";
+
+$iter = 0;
 while(my $line = <$f2_fh>)
 {
     $line = trim($line);
     my ($label, @rest) = split /\s+/, $line;
-    my $i = push(@f2_labels, $label) - 1; # getting list length-1 in $i
+    $f2_labels{$label} = $iter;
 
-    $f2_atoms->[$i][0] = $rest[1];
-    $f2_atoms->[$i][1] = $rest[2];
-    $f2_atoms->[$i][2] = $rest[3];
+    $f2_atoms->[$iter][0] = $rest[1];
+    $f2_atoms->[$iter][1] = $rest[2];
+    $f2_atoms->[$iter][2] = $rest[3];
+
+    $iter++;
 }
 close($f2_fh);
 
@@ -153,8 +161,8 @@ close($outcar_fh);
 # print Dumper(@a_labels, @a_masses, @a_cart_pos_x, @a_cart_pos_y, @a_cart_pos_z);
 # print Dumper(@e_values, @e_vectors);
 
-$f1_atoms = dirkar($f1_atoms,$basis,scalar(@f1_labels));
-$f2_atoms = dirkar($f2_atoms,$basis,scalar(@f2_labels));
+$f1_atoms = dirkar($f1_atoms,$basis,scalar(keys(%f1_labels)));
+$f2_atoms = dirkar($f2_atoms,$basis,scalar(keys(%f2_labels)));
 
 open( my $poscar_cart_fh, ">", "DISPCAR_cart" ) || die "Can't open DISPCAR_cart file: $!";
 
@@ -182,18 +190,20 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
             # in CRYSTAL normal modes are normlaized (divided by) to classical amplitudes: A=Sqrt(2E/k)
             # thus, displacement will be: dx = dx_orig*A*qi0
             # also, dividing by square roots of the mass as follows from the characteristic length and amplitude formulas
-            my $qi0_cry = $fact*$qi0*sqrt(2*HBAR*CL/sqrt(AM))*$d/($sqrtm*sqrt($sqrtm));
+            my $qi0_cry = $fact*$qi0*$amp*$d/($sqrtm*sqrt($sqrtm));
             my @dv = ($disps[3*$j], $disps[3*$j+1], $disps[3*$j+2]);
 
-            my @pos = ($coordinates->[$j][0]+$dv[0], $coordinates->[$j][1]+$dv[1], $coordinates->[$j][2]+$dv[2]);
-
             my $atom_name = $atoms->[$j]{"label"}.$atoms->[$j]{"indx"};
-            if($atom_name ~~ @f1_labels)
+            if(exists($f1_labels{$atom_name}))
             {
+                my $i = $f1_labels{$atom_name};
+                my @pos = ($f1_atoms->[$i][0]+$dv[0], $f1_atoms->[$i][1]+$dv[1], $f1_atoms->[$i][2]+$dv[2]);
                 $frag1_out .= sprintf("%s %9.5f %9.5f %9.5f\n", $atom_name, @pos);
             }
-            elsif($atom_name ~~ @f2_labels)
+            elsif(exists($f2_labels{$atom_name}))
             {
+                my $i = $f2_labels{$atom_name};
+                my @pos = ($f2_atoms->[$i][0]+$dv[0], $f2_atoms->[$i][1]+$dv[1], $f2_atoms->[$i][2]+$dv[2]);
                 $frag2_out .= sprintf("%s %9.5f %9.5f %9.5f\n", $atom_name, @pos);
             }
         }
