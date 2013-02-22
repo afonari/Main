@@ -70,7 +70,7 @@ while(my $line = <$outcar_fh>)
             {
                 # print $next;
                 my ($i, $au, $atom_n, $atom_s, $x, $y, $z) = ($1, $2, $3, $4, $5, $6, $7);
-                print $cif_fh sprintf("%s%d %s %.5f %.5f %.5f\n", $atom_s, $i, $atom_s, $x, $y, $z);
+                print $cif_fh sprintf("%s%d %s %9.5f %9.5f %9.5f\n", $atom_s, $i, $atom_s, $x, $y, $z);
                 #push(@atoms_lines, sprintf("%s %.5f %.5f %.5f", $atom_s, $x, $y, $z));
             }
             else

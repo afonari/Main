@@ -130,9 +130,9 @@ sub kardir {
         $v3 = $vector->[$i][0]*$recip_basis->[0][2] + $vector->[$i][1]*$recip_basis->[1][2] + $vector->[$i][2]*$recip_basis->[2][2];
 
         # move atoms to primative cell
-        $vector->[$i][0] = $v1+60-int($v1+60);
-        $vector->[$i][1] = $v2+60-int($v2+60);
-        $vector->[$i][2] = $v3+60-int($v3+60);
+        $vector->[$i][0] = $v1;#+60-int($v1+60);
+        $vector->[$i][1] = $v2;#+60-int($v2+60);
+        $vector->[$i][2] = $v3;#+60-int($v3+60);
     }
     for ($i=0;$i<3;$i++) {
         for ($j=0;$j<3;$j++) {
