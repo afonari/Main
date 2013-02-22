@@ -16,41 +16,36 @@
 use strict; 
 use warnings;
 use Data::Dumper;
-use Math::Trig qw(acos_real);
 
-if ( scalar( @ARGV ) < 1 )
+# from http://cpansearch.perl.org/src/BDFOY/Chemistry-Elements-1.07/Elements.pm
+my %e=('H'=>'1','He'=>'2','Li'=>'3','Be'=>'4','B'=>'5','C'=>'6','N'=>'7','O'=>'8','F'=>'9','Ne'=>'10','Na'=>'11','Mg'=>'12','Al'=>'13','Si'=>'14','P'=>'15','S'=>'16','Cl'=>'17','Ar'=>'18','K'=>'19','Ca'=>'20','Sc'=>'21','Ti'=>'22','V'=>'23','Cr'=>'24','Mn'=>'25','Fe'=>'26','Co'=>'27','Ni'=>'28','Cu'=>'29','Zn'=>'30','Ga'=>'31','Ge'=>'32','As'=>'33','Se'=>'34','Br'=>'35','Kr'=>'36','Rb'=>'37','Sr'=>'38','Y'=>'39','Zr'=>'40','Nb'=>'41','Mo'=>'42','Tc'=>'43','Ru'=>'44','Rh'=>'45','Pd'=>'46','Ag'=>'47','Cd'=>'48','In'=>'49','Sn'=>'50','Sb'=>'51','Te'=>'52','I'=>'53','Xe'=>'54','Cs'=>'55','Ba'=>'56','La'=>'57','Ce'=>'58','Pr'=>'59','Nd'=>'60','Pm'=>'61','Sm'=>'62','Eu'=>'63','Gd'=>'64','Tb'=>'65','Dy'=>'66','Ho'=>'67','Er'=>'68','Tm'=>'69','Yb'=>'70','Lu'=>'71','Hf'=>'72','Ta'=>'73','W'=>'74','Re'=>'75','Os'=>'76','Ir'=>'77','Pt'=>'78','Au'=>'79','Hg'=>'80','Tl'=>'81','Pb'=>'82','Bi'=>'83','Po'=>'84','At'=>'85','Rn'=>'86','Fr'=>'87','Ra'=>'88','Ac'=>'89','Th'=>'90','Pa'=>'91','U'=>'92','Np'=>'93','Pu'=>'94','Am'=>'95','Cm'=>'96','Bk'=>'97','Cf'=>'98','Es'=>'99','Fm'=>'100','Md'=>'101','No'=>'102','Lr'=>'103','Rf'=>'104','Ha'=>'105','Sg'=>'106','Bh'=>'107','Hs'=>'108','Mt'=>'109');
+
+if ( scalar( @ARGV ) < 2 )
 {
-    die( "\nUse: $0 <freq.out>\n" );
+    die( "\nUse: $0 <output.out> <atoms.list>\n" );
 }
 open( my $outcar_fh, "<", $ARGV[0]) || die "Can't open $ARGV[0]: $!\n";
+open( my $f_fh, "<", $ARGV[1]) || die "Can't open $ARGV[1]: $!\n";
 
-my (%f_labels, $f_atoms);
-open( my $f_fh, "<", "atoms.list") || die "Can't open atoms.list: $!\n";
-
+my (@f_labels, $f_atoms);
 my $iter = 0;
 while(my $line = <$f_fh>)
 {
     $line = trim($line);
     my ($label, @rest) = split /\s+/, $line;
-    $f_labels{$label} = $iter;
+    push(@f_labels, $label);
 
-    $f_atoms->[$iter][0] = $rest[1];
-    $f_atoms->[$iter][1] = $rest[2];
-    $f_atoms->[$iter][2] = $rest[3];
+    $f_atoms->[$iter][0] = $rest[0];
+    $f_atoms->[$iter][1] = $rest[1];
+    $f_atoms->[$iter][2] = $rest[2];
 
     $iter++;
 }
 close($f_fh);
 
-my ($atoms, $total_atoms, $basis, $coordinates);
+my $basis;
 while(my $line = <$outcar_fh>)
 {
-    if($line =~ m/ATOMS IN THE UNIT CELL:\s+(\d+)/)
-    {
-        $total_atoms = $1;
-        print "Number of atoms = $total_atoms;\n";
-    }
-
     if($line =~ /DIRECT LATTICE VECTORS CARTESIAN COMPONENTS/)
     {
         <$outcar_fh>; # next line
@@ -65,88 +60,24 @@ while(my $line = <$outcar_fh>)
                 $basis->[$j][$i] = $line[$j];
             }
         }
-
-        <$outcar_fh>;<$outcar_fh>;<$outcar_fh>;
-        <$outcar_fh>;<$outcar_fh>;<$outcar_fh>;
-
-        for(my $i=0; $i < $total_atoms; $i++)
-        {
-            my $line = <$outcar_fh>; $line = trim($line);
-
-            #  1     6 C     3.261901092826E+00 -9.881441284132E-01  9.509079807780E-01
-            my @temp = split('\s+', $line);
-            $atoms->[$i]{"indx"} = $temp[0];
-            $atoms->[$i]{"number"} = $temp[1];
-            $atoms->[$i]{"label"} = $temp[2];
-            $atoms->[$i]{"mass"} = $m{$temp[2]};
-
-            $coordinates->[$i][0] = $temp[3]; # x
-            $coordinates->[$i][1] = $temp[4]; # y
-            $coordinates->[$i][2] = $temp[5]; # z
-        }
     }
 }
 close($outcar_fh);
 
-# my @x = ($a_cart_pos_x[2], $a_cart_pos_y[2], $a_cart_pos_z[2]);my @v = cart2frac(\@x, \@g);printf("%10.6f %10.6f %10.6f || %10.6f %10.6f %10.6f\n", $a_frac_pos_x[2], $a_frac_pos_y[2], $a_frac_pos_z[2], $v[0], $v[1], $v[2]);
-# print Dumper(@a_labels, @a_masses, @a_cart_pos_x, @a_cart_pos_y, @a_cart_pos_z);
-# print Dumper(@e_values, @e_vectors);
+$f_atoms = kardir($f_atoms,$basis,scalar(@f_labels));
 
-$f1_atoms = dirkar($f1_atoms,$basis,scalar(keys(%f1_labels)));
-$f2_atoms = dirkar($f2_atoms,$basis,scalar(keys(%f2_labels)));
-
-open( my $poscar_cart_fh, ">", "DISPCAR_cart" ) || die "Can't open DISPCAR_cart file: $!";
-
-my @displacements = (-2, -1, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st derivative.
-for( my $i = 0; $i < scalar(@e_values); $i++)
+open( my $poscar_frac_fh, ">", $ARGV[1].".frac" ) || die "Can't open $ARGV[1].frac file: $!";
+for( my $i = 0; $i < scalar(@f_labels); $i++ )
 {
-    print "processing ".($i+1)." out of ".scalar(@e_values)." eigenvalues\n";
-    my $ev = $e_values[$i];
-    if($ev < 0.0){next;} # skip imaginary frequency
+    my $label = $f_labels[$i]; $label =~ s/[0-9]//g;
+    my $number = $e{$label};
+    my @coords = ($f_atoms->[$i][0], $f_atoms->[$i][1], $f_atoms->[$i][2]);
 
-    my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*CM2EV)); # characteristic length of a normal mode.
-                                                 # Will divide by square root of atomic mass later in the code.
-    my $amp = sqrt(2*HBAR*CL/sqrt(AM));          # classical amplitude
-
-    my @disps = split('\s+', trim($e_vectors[$i]));
-    foreach my $d (@displacements)
-    {
-        my ($frag1_out, $frag2_out);
-        my $header = sprintf("POSCAR: disp= %d, w= %8.5f meV, qi0= %5e, amp= %5e, f= %6.4f\n", $d, $ev*CM2EV*1000, $qi0, $amp, $fact);
-        print $poscar_cart_fh $header;
-
-        for( my $j = 0; $j < $total_atoms; $j++)
-        {
-            my $sqrtm = sqrt($atoms->[$j]{"mass"});
-            # in CRYSTAL normal modes are normlaized (divided by) to classical amplitudes: A=Sqrt(2E/k)
-            # thus, displacement will be: dx = dx_orig*A*qi0
-            # also, dividing by square roots of the mass as follows from the characteristic length and amplitude formulas
-            my $qi0_cry = $fact*$qi0*$amp*$d/($sqrtm*sqrt($sqrtm));
-            my @dv = ($disps[3*$j], $disps[3*$j+1], $disps[3*$j+2]);
-
-            my $atom_name = $atoms->[$j]{"label"}.$atoms->[$j]{"indx"};
-            if(exists($f1_labels{$atom_name}))
-            {
-                my $i = $f1_labels{$atom_name};
-                my @pos = ($f1_atoms->[$i][0]+$dv[0], $f1_atoms->[$i][1]+$dv[1], $f1_atoms->[$i][2]+$dv[2]);
-                $frag1_out .= sprintf("%s %9.5f %9.5f %9.5f\n", $atom_name, @pos);
-            }
-            elsif(exists($f2_labels{$atom_name}))
-            {
-                my $i = $f2_labels{$atom_name};
-                my @pos = ($f2_atoms->[$i][0]+$dv[0], $f2_atoms->[$i][1]+$dv[1], $f2_atoms->[$i][2]+$dv[2]);
-                $frag2_out .= sprintf("%s %9.5f %9.5f %9.5f\n", $atom_name, @pos);
-            }
-        }
-        print $poscar_cart_fh $frag1_out;
-        print $poscar_cart_fh "NEXT_FRAG\n";
-        print $poscar_cart_fh $frag2_out;
-    }
+    print $poscar_frac_fh sprintf("%s %9.5f %9.5f %9.5f\n", $label, @coords);
 }
 
-print "DISPCAR files have been created.\n\n";
-close($poscar_cart_fh);
-# close($poscar_recp_fh);
+close($poscar_frac_fh);
+print "$ARGV[1].frac file has been created.\n\n";
 
 # SUBs
 sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
@@ -187,7 +118,6 @@ sub inverse {
 sub kardir {
     my $vector = shift;
     my $basis = shift;
-    my $lattice = shift;
     my $total_atoms = shift;
     my $recip_basis;
     my ($v1,$v2,$v3,$i,$j);
