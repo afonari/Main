@@ -31,6 +31,8 @@ my (@f_labels, $f_atoms);
 my $iter = 0;
 while(my $line = <$f_fh>)
 {
+    next if $line =~ /^\s*$/;
+
     $line = trim($line);
     my ($label, @rest) = split /\s+/, $line;
     push(@f_labels, $label);
@@ -73,7 +75,7 @@ for( my $i = 0; $i < scalar(@f_labels); $i++ )
     my $number = $e{$label};
     my @coords = ($f_atoms->[$i][0], $f_atoms->[$i][1], $f_atoms->[$i][2]);
 
-    print $poscar_frac_fh sprintf("%s %9.5f %9.5f %9.5f\n", $label, @coords);
+    print $poscar_frac_fh sprintf("%s %9.5f %9.5f %9.5f\n", $number, @coords);
 }
 
 close($poscar_frac_fh);

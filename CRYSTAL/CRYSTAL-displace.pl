@@ -180,7 +180,7 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     my @disps = split('\s+', trim($e_vectors[$i]));
     foreach my $d (@displacements)
     {
-        my ($frag1_out, $frag2_out);
+        my ($frag1_out, $frag2_out) = ("", "");
         my $header = sprintf("POSCAR: disp= %d, w= %8.5f meV, qi0= %5e, amp= %5e, f= %6.4f\n", $d, $ev*CM2EV*1000, $qi0, $amp, $fact);
         print $poscar_cart_fh $header;
 
@@ -191,7 +191,7 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
             # thus, displacement will be: dx = dx_orig*A*qi0
             # also, dividing by square roots of the mass as follows from the characteristic length and amplitude formulas
             my $qi0_cry = $fact*$qi0*$amp*$d/($sqrtm*sqrt($sqrtm));
-            my @dv = ($disps[3*$j], $disps[3*$j+1], $disps[3*$j+2]);
+            my @dv = ($disps[3*$j]*$qi0_cry, $disps[3*$j+1]*$qi0_cry, $disps[3*$j+2]*$qi0_cry);
 
             my $atom_name = $atoms->[$j]{"label"}.$atoms->[$j]{"indx"};
             if(exists($f1_labels{$atom_name}))
