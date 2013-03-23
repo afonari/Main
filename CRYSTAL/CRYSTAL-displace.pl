@@ -1,13 +1,12 @@
 #!/usr/bin/env perl
 #;-*- Perl -*-
 
-# Copyright (c) "2012, by Georgia Institute of Technology
-#                Contributors: Alexandr Fonari
-#                Affiliation: Dr. Bredas group
+# Copyright (c) "2012, Alexandr Fonari
 #                URL: https://github.com/alexandr-fonari/Main/tree/master/CRYSTAL
 #                License: MIT License
 # Version 0.99
-####### ===== ## =====
+#
+# ===== ## =====
 # This is script is a fork of:
 #
 #   Program: xdatgen
@@ -16,10 +15,12 @@
 #   ver 0.5  4. June 2007
 #   url: http://www.uni-due.de/~hp0058/vmdplugins/utilities/xdatgen.c
 #
-# it is heavily based on (some SUBs are copy/pasted):
+# crystallographic conversions are heavily based on (some SUBs are copy/pasted):
 # http://theory.cm.utexas.edu/vasp/scripts/src/Vasp.pm
+# ===== ## =====
 #
-#### I hope you will like it! ####
+# I hope you will like it,
+# Sasha.
 
 use strict; 
 use warnings;
@@ -33,6 +34,10 @@ use constant HBAR => PlanckConstant/(2*PI); # [eV s]
 use constant CL => 2.99792458e18;    # [A/s]
 use constant AM => 931.494043e6;     # [eV/c^2]
 use constant CM2EV => 0.0001239842573148; # [eV]
+use constant Angstrom => 1.0e-10;    # [m]
+use constant EV => 1.60217733e-19;   # [J]
+use constant AMU => 1.6605402e-27;   # [kg]
+use constant VaspToEv => sqrt(EV/AMU)/Angstrom/(2*PI)*PlanckConstant; # [eV] 6.46541380e-2
 
 if ( scalar( @ARGV ) < 1 )
 {
@@ -46,6 +51,7 @@ open( my $f1_fh, "<", "frag1.list") || die "Can't open frag1.list: $!\n";
 my $iter = 0;
 while(my $line = <$f1_fh>)
 {
+    next if $line =~ /^\s*$/;
     $line = trim($line);
     my ($label, @rest) = split /\s+/, $line;
     $f1_labels{$label} = $iter;
@@ -64,6 +70,7 @@ open( my $f2_fh, "<", "frag2.list") || die "Can't open frag2.list: $!\n";
 $iter = 0;
 while(my $line = <$f2_fh>)
 {
+    next if $line =~ /^\s*$/;
     $line = trim($line);
     my ($label, @rest) = split /\s+/, $line;
     $f2_labels{$label} = $iter;
@@ -166,22 +173,22 @@ $f2_atoms = dirkar($f2_atoms,$basis,scalar(keys(%f2_labels)));
 
 open( my $poscar_cart_fh, ">", "DISPCAR_cart" ) || die "Can't open DISPCAR_cart file: $!";
 
-my @displacements = (-2, -1, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st derivative.
+my @displacements = (-1.0, -0.5, 0.0, 0.5, 1.0); # hard-coded so far for 5-point stencil finite difference 1st derivative.
 for( my $i = 0; $i < scalar(@e_values); $i++)
 {
     print "processing ".($i+1)." out of ".scalar(@e_values)." eigenvalues\n";
     my $ev = $e_values[$i];
     if($ev < 0.0){next;} # skip imaginary frequency
 
-    my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*CM2EV)); # characteristic length of a normal mode.
+    my $qi0 = sqrt(2*(HBAR*CL)**2/(AM*$ev*CM2EV)); # characteristic length of a normal mode.
                                                  # Will divide by square root of atomic mass later in the code.
-    my $amp = sqrt(2*HBAR*CL/sqrt(AM));          # classical amplitude
-
+    my $qi0_1 = sqrt((HBAR*CL)**2/(AM*$ev*CM2EV));          # classical amplitude
+    # my $amp = sqrt(2*HBAR*CL/sqrt(AM)); 
     my @disps = split('\s+', trim($e_vectors[$i]));
     foreach my $d (@displacements)
     {
         my ($frag1_out, $frag2_out) = ("", "");
-        my $header = sprintf("POSCAR: disp= %d, w= %8.5f meV, qi0= %5e, amp= %5e, f= %6.4f\n", $d, $ev*CM2EV*1000, $qi0, $amp, $fact);
+        my $header = sprintf("POSCAR: disp= %f, E= %8.5f meV, w= %8.5f 1/cm q=%8.5f\n", $d, $ev*CM2EV*1000, $ev, $qi0*$qi0_1);
         print $poscar_cart_fh $header;
 
         for( my $j = 0; $j < $total_atoms; $j++)
@@ -190,7 +197,7 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
             # in CRYSTAL normal modes are normlaized (divided by) to classical amplitudes: A=Sqrt(2E/k)
             # thus, displacement will be: dx = dx_orig*A*qi0
             # also, dividing by square roots of the mass as follows from the characteristic length and amplitude formulas
-            my $qi0_cry = $fact*$qi0*$amp*$d/($sqrtm*sqrt($sqrtm));
+            my $qi0_cry = $qi0*$qi0*$d/($sqrtm*$sqrtm);
             my @dv = ($disps[3*$j]*$qi0_cry, $disps[3*$j+1]*$qi0_cry, $disps[3*$j+2]*$qi0_cry);
 
             my $atom_name = $atoms->[$j]{"label"}.$atoms->[$j]{"indx"};
@@ -200,7 +207,7 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
                 my @pos = ($f1_atoms->[$i][0]+$dv[0], $f1_atoms->[$i][1]+$dv[1], $f1_atoms->[$i][2]+$dv[2]);
                 $frag1_out .= sprintf("%s %9.5f %9.5f %9.5f\n", $atom_name, @pos);
             }
-            elsif(exists($f2_labels{$atom_name}))
+            if(exists($f2_labels{$atom_name})) # labels in each fragment could be the same.
             {
                 my $i = $f2_labels{$atom_name};
                 my @pos = ($f2_atoms->[$i][0]+$dv[0], $f2_atoms->[$i][1]+$dv[1], $f2_atoms->[$i][2]+$dv[2]);
@@ -223,7 +230,6 @@ sub dirkar {
     my $vector = shift;
     my $basis = shift;
     my $total_atoms = shift;
-
     my ($i,$v1,$v2,$v3);
 
     for ($i=0; $i<$total_atoms; $i++) {

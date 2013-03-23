@@ -1,9 +1,7 @@
 #!/usr/bin/env perl
 #;-*- Perl -*-
 
-# Copyright (c) "2012, by Georgia Institute of Technology
-#                Contributors: Alexandr Fonari
-#                Affiliation: Dr. Bredas group
+# Copyright (c) "2012, Alexandr Fonari
 #                URL: https://github.com/alexandr-fonari/Main/tree/master/CRYSTAL
 #                License: MIT License
 # Version 0.99

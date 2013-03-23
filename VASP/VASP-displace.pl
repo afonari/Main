@@ -1,8 +1,6 @@
 #!/usr/bin/env perl
 
-# Copyright (c) "2012, by Georgia Institute of Technology
-#                Contributors: Alexandr Fonari
-#                Affiliation: Dr. Bredas group
+# Copyright (c) "2012, Alexandr Fonari
 #                URL: https://github.com/alexandr-fonari/Main/tree/master/VASP
 #                License: MIT License
 
@@ -21,7 +19,7 @@ use constant Angstrom => 1.0e-10;    # [m]
 use constant EV => 1.60217733e-19;   # [J]
 use constant AMU => 1.6605402e-27;   # [kg]
 use constant VaspToEv => sqrt(EV/AMU)/Angstrom/(2*PI)*PlanckConstant; # [eV] 6.46541380e-2
-
+use constant VaspToCm =>  VaspToEv/(1.2398419e-4); # [cm^-1] 521.47083
 my $xml = new XML::Simple();
 my $data = $xml->XMLin("vasprun.xml");
 
@@ -76,7 +74,7 @@ my @e_vectors = @{$data->{"calculation"}->{"dynmat"}->{"varray"}->{"eigenvectors
 
 open( my $poscar_fh, ">", "DISPCAR" ) || die "Can't open DISPCAR file: $!";
 
-my @displacements = (-2, -1, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st deriv.
+my @displacements = (-2, -1, 0, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st deriv.
 for( my $i = 0; $i < scalar(@e_values); $i++)
 {
     print "processing ".($i+1)." out ".scalar(@e_values)." eigenvalues\n";
