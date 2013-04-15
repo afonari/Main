@@ -6,7 +6,7 @@
 # Version 1.0
 #
 # Program converts CRYSTAL output into CIF file.
-# Output from ionic relaxation is supported,
+# Output from ionic relaxation is supported (variable unit cell relaxations have not been tested),
 # and will result in CIF with many structures (as many as ionic steps)
 # CIF file can be opened with CSD Mercury (c).
 #
