@@ -1,8 +1,26 @@
 #!/usr/bin/env perl
+#;-*- Perl -*-
 
 # Copyright (c) "2012, Alexandr Fonari
-#                URL: https://github.com/alexandr-fonari/Main/tree/master/VASP
+#                URL: https://github.com/alexandr-fonari/Main/tree/master/CRYSTAL
 #                License: MIT License
+# Version 0.99
+#
+# ===== ## =====
+# This is script is a fork of:
+#
+#   Program: xdatgen
+#   Sung Sakong, PhD
+#   sung.sakong _at_ uni-due.de
+#   ver 0.5  4. June 2007
+#   url: http://www.uni-due.de/~hp0058/vmdplugins/utilities/xdatgen.c
+#
+# crystallographic conversions are heavily based on (some SUBs are copy/pasted):
+# http://theory.cm.utexas.edu/vasp/scripts/src/Vasp.pm
+# ===== ## =====
+#
+# I hope you will like it,
+# Sasha.
 
 use strict;
 use warnings;
@@ -35,38 +53,39 @@ foreach (@t)
 # print Dumper( @a_masses, @a_labels, @a_count );
 
 # basis vectors
-my @f;
+my $basis;
 @t = @{$data->{"structure"}->{"initialpos"}->{"crystal"}->{"varray"}->{"basis"}->{"v"}};
-($f[1], $f[2], $f[3]) = split('\s+', trim($t[0]));
-($f[4], $f[5], $f[6]) = split('\s+', trim($t[1]));
-($f[7], $f[8], $f[9]) = split('\s+', trim($t[2]));
-# print Dumper( @f );
+for (my $i=0; $i<3; $i++)
+{
+    my @line = split(/\s+/, trim($t[$i]));
+    # This is how Vasp reads in the basis
+    for (my $j=0; $j<3; $j++)
+    {
+        $basis->[$j][$i] = $line[$j];
+    }
+}
+# print Dumper( \%basis );
 
 # fractional atomic positions
-my (@a_frac_pos_x, @a_frac_pos_y, @a_frac_pos_z);
+my ($coord_frac, $natoms);
+
 @t = @{$data->{"structure"}->{"initialpos"}->{"varray"}->{"v"}};
-foreach (@t)
+$natoms = scalar(@t);
+for my $i (0 .. $#t)
 {
-    my @t = split('\s+', trim($_));
-    push(@a_frac_pos_x, $t[0]);
-    push(@a_frac_pos_y, $t[1]);
-    push(@a_frac_pos_z, $t[2]);
+    my @t1 = split(/\s+/, trim($t[$i]));
+    $coord_frac->[$i][0] = $t1[0]; # x
+    $coord_frac->[$i][1] = $t1[1]; # y
+    $coord_frac->[$i][2] = $t1[2]; # z
 }
-# print Dumper(@a_frac_pos_x, @a_frac_pos_y, @a_frac_pos_z);
+# print Dumper( \%coord_frac );
 
 # obtain Cartesian coordinates: Transpose(basis)*v:
-my (@a_cart_pos_x, @a_cart_pos_y, @a_cart_pos_z);
-for(my $i = 0; $i < scalar(@a_frac_pos_x); $i++ )
-{
-    my @v = ($a_frac_pos_x[$i], $a_frac_pos_y[$i], $a_frac_pos_z[$i]);
-    push(@a_cart_pos_x, $f[1]*$v[0] + $f[4]*$v[1] + $f[7]*$v[2]);
-    push(@a_cart_pos_y, $f[2]*$v[0] + $f[5]*$v[1] + $f[8]*$v[2]);
-    push(@a_cart_pos_z, $f[3]*$v[0] + $f[6]*$v[1] + $f[9]*$v[2]);
-}
-# print Dumper(@a_cart_pos_x, @a_cart_pos_y, @a_cart_pos_z);
+$coord_cart = dirkar($coord_frac, $basis, $natoms);
+# print Dumper( \%$coord_cart );
 
 # hessian eigenvalues
-my @e_values = split('\s+', trim($data->{"calculation"}->{"dynmat"}->{"v"}->{"content"}));
+my @e_values = split(/\s+/, trim($data->{"calculation"}->{"dynmat"}->{"v"}->{"content"}));
 
 # hessian eigenvectors
 my @e_vectors = @{$data->{"calculation"}->{"dynmat"}->{"varray"}->{"eigenvectors"}->{"v"}};
@@ -115,3 +134,23 @@ sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
 
 # http://stackoverflow.com/questions/439647/how-do-i-print-unique-elements-in-perl-array
 sub uniq {local %_; grep {!$_{$_}++} @_}
+
+sub dirkar {
+    my $vector = shift;
+    my $basis = shift;
+    my $total_atoms = shift;
+    my ($i,$v1,$v2,$v3);
+
+    for ($i=0; $i<$total_atoms; $i++) {
+        $v1 = $vector->[$i][0]*$basis->[0][0] + $vector->[$i][1]*$basis->[0][1] + $vector->[$i][2]*$basis->[0][2];
+        $v2 = $vector->[$i][0]*$basis->[1][0] + $vector->[$i][1]*$basis->[1][1] + $vector->[$i][2]*$basis->[1][2];
+        $v3 = $vector->[$i][0]*$basis->[2][0] + $vector->[$i][1]*$basis->[2][1] + $vector->[$i][2]*$basis->[2][2];
+        $vector->[$i][0] = $v1;
+        $vector->[$i][1] = $v2;
+        $vector->[$i][2] = $v3;
+    }
+
+    return ($vector);
+}
+
+
