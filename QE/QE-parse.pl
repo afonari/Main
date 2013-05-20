@@ -24,16 +24,33 @@ my $xml = new XML::Simple();
 my $data = $xml->XMLin("vasprun.xml");
 
 # atomic masses and labels
-my (@a_masses, @a_labels, @a_count);
-my @t = @{$data->{"atominfo"}->{"array"}->{"atomtypes"}->{"set"}->{"rc"}};
+my (@a_labels, @a_indx, @a_masses, @a_count);
+
+my @t = @{$data->{"atominfo"}->{"array"}->{"atoms"}->{"set"}->{"rc"}};
 foreach (@t)
 {
-    push(@a_masses, (trim($_->{"c"}[2])) x trim($_->{"c"}[0]));
-    push(@a_labels, (trim($_->{"c"}[1])) x trim($_->{"c"}[0]));
-    push(@a_count, trim($_->{"c"}[0]));
+    #push(@a_masses, (trim($_->{"c"}[2])) x trim($_->{"c"}[0]));
+    push(@a_labels, (trim($_->{"c"}[0]))); # x trim($_->{"c"}[0]));
+    push(@a_indx,   (trim($_->{"c"}[1]))); # x trim($_->{"c"}[0]));
+    #push(@a_count, trim($_->{"c"}[0]));
 }
-# print Dumper( @a_masses, @a_labels, @a_count );
+# print Dumper( @a_labels, @a_indx );
 
+@t = @{$data->{"atominfo"}->{"array"}->{"atomtypes"}->{"set"}->{"rc"}};
+my %label_mass;
+foreach (@t)
+{
+    my ($label, $mass) = ( trim($_->{"c"}[1]), trim($_->{"c"}[2]) );
+    $label_mass{$label} = $mass;
+}
+# print Dumper( \% label_mass);
+
+foreach my $label (@a_labels)
+{
+    push( @a_masses, $label_mass{$label} );
+}
+print Dumper( @a_masses );
+die;
 # basis vectors
 my @f;
 @t = @{$data->{"structure"}->{"initialpos"}->{"crystal"}->{"varray"}->{"basis"}->{"v"}};
