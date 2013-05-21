@@ -7,7 +7,7 @@
 # Version 0.99
 #
 # ===== ## =====
-# This script is a fork of:
+# This script is a fork of (copyrighted accordingly):
 #
 #   Program: xdatgen
 #   Sung Sakong, PhD
@@ -15,7 +15,7 @@
 #   ver 0.5  4. June 2007
 #   url: http://www.uni-due.de/~hp0058/vmdplugins/utilities/xdatgen.c
 #
-# Crystallographic conversions are heavily based on (some SUBs are copy/pasted):
+# Crystallographic conversions are heavily based on and copyrighted accordingly (some SUBs are copy/pasted):
 # http://theory.cm.utexas.edu/vasp/scripts/src/Vasp.pm
 # ===== ## =====
 #
@@ -102,7 +102,6 @@ my @e_vectors = @{$data->{"calculation"}->{"dynmat"}->{"varray"}->{"eigenvectors
 
 open( my $poscar_fh, ">", "DISPCAR" ) || die "Can't open DISPCAR file: $!";
 
-my @displacements = (-2, -1, 0, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st deriv.
 for( my $i = 0; $i < scalar(@e_values); $i++)
 {
     print "processing ".($i+1)." out ".scalar(@e_values)." eigenvalues\n";
@@ -114,15 +113,16 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
     my @disps = split('\s+', trim($e_vectors[$i]));
 
+    my @displacements = (-1, -0.5, -0.1, -0.01, 0.5, 1); # hard-coded so far for the five-point stencil 1st deriv.
     foreach (@displacements)
     {
-        print $poscar_fh sprintf("POSCAR: disp=%d, w=%8.5f meV\n", $_, sqrt($ev)*VaspToEv*1000);
+        print $poscar_fh sprintf("POSCAR: disp=%f, w=%8.5f meV\n", $_, sqrt($ev)*VaspToEv*1000);
         print $poscar_fh "1.00000\n";
         print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][0], $basis->[1][0], $basis->[2][0]);
         print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][1], $basis->[1][1], $basis->[2][1]);
         print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][2], $basis->[1][2], $basis->[2][2]);
-        print $poscar_fh "_VASP SPECIFIC ATOM LABELS_\n";
-        print $poscar_fh "_VASP SPECIFIC ATOM COUNTS_\n";
+        print $poscar_fh "_VASP SPECIFIC ATOM LABELS_\n"; # following KISS, will not generate those lines
+        print $poscar_fh "_VASP SPECIFIC ATOM COUNTS_\n"; # ...
         print $poscar_fh "Cartesian\n";
 
         for( my $j = 0; $j < $natoms; $j++)
@@ -160,5 +160,3 @@ sub dirkar {
 
     return ($vector);
 }
-
-
