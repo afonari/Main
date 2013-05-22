@@ -27,7 +27,7 @@ die( "\nUse: $0 <input.out> <dyn.out>\n" ) if ( scalar( @ARGV ) < 2 );
 
 open( my $outcar_fh, "<", $ARGV[0]) || die "Can't open $ARGV[0]: $!\n";
 
-my ($alat, $basis, $coord_frac, $natoms, @a_labels);
+my ($alat, $basis, $coord_frac, $natoms, @a_labels, @a_masses, %label_mass);
 while(my $line = <$outcar_fh>)
 {
     if($line =~ /lattice parameter \(alat\)\s+=\s+([\d\.]+)/)
@@ -52,18 +52,15 @@ while(my $line = <$outcar_fh>)
 
     if($line =~ /atomic species\s+valence\s+mass\s+pseudopotential/)
     {
-        #while(my $next = <$outcar_fh>)
-        #{
+        while(my $next = <$outcar_fh>)
+        {
             # C              4.00    12.01100      C( 1.00)
-        #    if($next  =~ m/^\s+(\w+)\s+(\d+\.\d+)\s+(\d+\.\d+)/)
-        #    {
-                # print $next;
-        #        my ($i, $au, $atom_n, $atom_s, $x, $y, $z) = ($1, $2, $3, $4, $5, $6, $7);
-        #        print $cif_fh sprintf("%s%d %s %9.5f %9.5f %9.5f\n", $atom_s, $i, $atom_s, $x, $y, $z);
-                #push(@atoms_lines, sprintf("%s %.5f %.5f %.5f", $atom_s, $x, $y, $z));
-        #    }
-        #    else{last;}
-        #}
+            if($next  =~ m/^\s+(\w+)\s+(\d+\.\d+)\s+(\d+\.\d+)/)
+            {
+                $label_mass{$1} = $3;
+                print "Found atom type $1 with mass $3\n";
+            }else{last;}
+        }
     }
 
     if($line =~ /Crystallographic axes/)
@@ -78,6 +75,7 @@ while(my $line = <$outcar_fh>)
             if($next  =~ m/^\s*\d+\s+(\w+).+?(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/)
             {
                 push(@a_labels, $1);
+                push(@a_masses, $label_mass{$1});
                 $coord_frac->[$c][0] = $2; # x
                 $coord_frac->[$c][1] = $3; # y
                 $coord_frac->[$c][2] = $4; # z
@@ -114,6 +112,12 @@ while(my $line = <$dyncar_fh>)
 }
 
 ## creating XML file
+my $xml_labels_indx;
+for (my $i=0; $i<$natoms; $i++)
+{
+    $xml_labels_indx .= "<rc><c>".$a_labels[$i]." </c><c>   1</c></rc>\n";
+}
+
 my $xml_basis;
 for (my $i=0; $i<3; $i++)
 {
@@ -141,6 +145,27 @@ for (my $i=0; $i<scalar(@eigen_vals); $i++)
 my $xml_out = <<END;
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <modeling>
+ <atominfo>
+  <array name="atoms" >
+   <dimension dim="1">ion</dimension>
+   <field type="string">element</field>
+   <field type="int">atomtype</field>
+   <set>
+$xml_labels_indx</set>
+  </array>
+  <array name="atomtypes" >
+   <dimension dim="1">type</dimension>
+   <field type="int">atomspertype</field>
+   <field type="string">element</field>
+   <field>mass</field>
+   <field>valence</field>
+   <field type="string">pseudopotential</field>
+   <set>
+    <rc><c>  20</c><c>C </c><c>     12.01100000</c><c>      4.00000000</c><c> PAW_PBE C 08Apr2002                    </c></rc>
+    <rc><c>  16</c><c>H </c><c>      2.00000000</c><c>      1.00000000</c><c> PAW_PBE H 15Jun2001                    </c></rc>
+   </set>
+  </array>
+ </atominfo>
  <structure name="initialpos" >
   <crystal>
    <varray name="basis" >
