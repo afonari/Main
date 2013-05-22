@@ -107,7 +107,7 @@ while(my $line = <$dyncar_fh>)
             my $yi = Math::Complex->make($t[1], $t[4]);
             my $zi = Math::Complex->make($t[2], $t[5]);
 
-            $vec .= join(' ', ($xi->abs(), $yi->abs(), $zi->abs()));
+            $vec .= sprintf("%10.8e %10.8e %10.8e", $xi->abs(), $yi->abs(), $zi->abs())." ";
         }
         push(@eigen_vecs, $vec);
     }
@@ -131,6 +131,13 @@ for (my $i=0; $i<$natoms; $i++)
     $xml_positions .= "<v> ".sprintf("%15.12f %15.12f %15.12f", $coord_frac->[$i][0], $coord_frac->[$i][1], $coord_frac->[$i][2])." </v>\n";
 }
 
+my $xml_eigen_vals = join(' ', @eigen_vals);
+
+my $xml_eigen_vecs;
+for (my $i=0; $i<scalar(@eigen_vals); $i++)
+{
+    $xml_eigen_vecs .= "<v> ".$eigen_vecs[$i]." </v>\n";
+}
 my $xml_out = <<END;
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <modeling>
@@ -142,6 +149,14 @@ $xml_basis</varray>
   <varray name="positions" >
 $xml_positions  </varray>
  </structure>
+ <calculation>
+  <dynmat>
+   <v name="eigenvalues">$xml_eigen_vals</v>
+   <varray name="eigenvectors" >
+$xml_eigen_vecs </varray>
+  </dynmat>
+ </calculation>
+</modeling>
 END
 
 print $xml_out;
