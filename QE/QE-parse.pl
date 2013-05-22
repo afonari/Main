@@ -117,7 +117,11 @@ for (my $i=0; $i<$natoms; $i++)
 {
     $xml_labels_indx .= "<rc><c>".$a_labels[$i]." </c><c>   1</c></rc>\n";
 }
-
+my $xml_labels_masses;
+foreach my $key (keys %label_mass)
+{
+    $xml_labels_masses .= "<rc><c>1</c><c> ".$key." </c><c> ".$label_mass{$key}." </c><c>4.0</c><c> GT rules </c></rc>\n";
+}
 my $xml_basis;
 for (my $i=0; $i<3; $i++)
 {
@@ -161,9 +165,7 @@ $xml_labels_indx</set>
    <field>valence</field>
    <field type="string">pseudopotential</field>
    <set>
-    <rc><c>  20</c><c>C </c><c>     12.01100000</c><c>      4.00000000</c><c> PAW_PBE C 08Apr2002                    </c></rc>
-    <rc><c>  16</c><c>H </c><c>      2.00000000</c><c>      1.00000000</c><c> PAW_PBE H 15Jun2001                    </c></rc>
-   </set>
+$xml_labels_masses</set>
   </array>
  </atominfo>
  <structure name="initialpos" >
@@ -172,7 +174,7 @@ $xml_labels_indx</set>
 $xml_basis</varray>
   </crystal>
   <varray name="positions" >
-$xml_positions  </varray>
+$xml_positions</varray>
  </structure>
  <calculation>
   <dynmat>
