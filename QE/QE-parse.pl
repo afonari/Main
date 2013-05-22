@@ -150,6 +150,8 @@ my $xml_out = <<END;
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <modeling>
  <atominfo>
+  <atoms>      36 </atoms>
+  <types>       2 </types>
   <array name="atoms" >
    <dimension dim="1">ion</dimension>
    <field type="string">element</field>
@@ -184,9 +186,11 @@ $xml_eigen_vecs </varray>
   </dynmat>
  </calculation>
 </modeling>
+
 END
 
-print $xml_out;
+open( my $vasprun_fh, ">", "vasprun.xml") || die "Can't open vasprun.xml.gen: $!\n";
+print $vasprun_fh $xml_out;
 
 sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
 
