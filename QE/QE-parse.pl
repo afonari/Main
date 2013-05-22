@@ -8,6 +8,7 @@ use strict;
 use warnings;
 use XML::Simple;
 use Data::Dumper;
+use Math::Complex;
 
 # physical constants in eV, Ang and s
 use constant PI => 4 * atan2(1, 1);
@@ -20,113 +21,130 @@ use constant EV => 1.60217733e-19;   # [J]
 use constant AMU => 1.6605402e-27;   # [kg]
 use constant VaspToEv => sqrt(EV/AMU)/Angstrom/(2*PI)*PlanckConstant; # [eV] 6.46541380e-2
 use constant VaspToCm =>  VaspToEv/(1.2398419e-4); # [cm^-1] 521.47083
-my $xml = new XML::Simple();
-my $data = $xml->XMLin("vasprun.xml");
+use constant A2B => 1.88972613289; # ANGSTROM_TO_BOHR
 
-# atomic masses and labels
-my (@a_labels, @a_indx, @a_masses, @a_count);
+die( "\nUse: $0 <input.out> <dyn.out>\n" ) if ( scalar( @ARGV ) < 2 );
 
-my @t = @{$data->{"atominfo"}->{"array"}->{"atoms"}->{"set"}->{"rc"}};
-foreach (@t)
+open( my $outcar_fh, "<", $ARGV[0]) || die "Can't open $ARGV[0]: $!\n";
+
+my ($alat, $basis, $coord_frac, $natoms, @a_labels);
+while(my $line = <$outcar_fh>)
 {
-    #push(@a_masses, (trim($_->{"c"}[2])) x trim($_->{"c"}[0]));
-    push(@a_labels, (trim($_->{"c"}[0]))); # x trim($_->{"c"}[0]));
-    push(@a_indx,   (trim($_->{"c"}[1]))); # x trim($_->{"c"}[0]));
-    #push(@a_count, trim($_->{"c"}[0]));
-}
-# print Dumper( @a_labels, @a_indx );
-
-@t = @{$data->{"atominfo"}->{"array"}->{"atomtypes"}->{"set"}->{"rc"}};
-my %label_mass;
-foreach (@t)
-{
-    my ($label, $mass) = ( trim($_->{"c"}[1]), trim($_->{"c"}[2]) );
-    $label_mass{$label} = $mass;
-}
-# print Dumper( \% label_mass);
-
-foreach my $label (@a_labels)
-{
-    push( @a_masses, $label_mass{$label} );
-}
-print Dumper( @a_masses );
-die;
-# basis vectors
-my @f;
-@t = @{$data->{"structure"}->{"initialpos"}->{"crystal"}->{"varray"}->{"basis"}->{"v"}};
-($f[1], $f[2], $f[3]) = split('\s+', trim($t[0]));
-($f[4], $f[5], $f[6]) = split('\s+', trim($t[1]));
-($f[7], $f[8], $f[9]) = split('\s+', trim($t[2]));
-# print Dumper( @f );
-
-# fractional atomic positions
-my (@a_frac_pos_x, @a_frac_pos_y, @a_frac_pos_z);
-@t = @{$data->{"structure"}->{"initialpos"}->{"varray"}->{"v"}};
-foreach (@t)
-{
-    my @t = split('\s+', trim($_));
-    push(@a_frac_pos_x, $t[0]);
-    push(@a_frac_pos_y, $t[1]);
-    push(@a_frac_pos_z, $t[2]);
-}
-# print Dumper(@a_frac_pos_x, @a_frac_pos_y, @a_frac_pos_z);
-
-# obtain Cartesian coordinates: Transpose(basis)*v:
-my (@a_cart_pos_x, @a_cart_pos_y, @a_cart_pos_z);
-for(my $i = 0; $i < scalar(@a_frac_pos_x); $i++ )
-{
-    my @v = ($a_frac_pos_x[$i], $a_frac_pos_y[$i], $a_frac_pos_z[$i]);
-    push(@a_cart_pos_x, $f[1]*$v[0] + $f[4]*$v[1] + $f[7]*$v[2]);
-    push(@a_cart_pos_y, $f[2]*$v[0] + $f[5]*$v[1] + $f[8]*$v[2]);
-    push(@a_cart_pos_z, $f[3]*$v[0] + $f[6]*$v[1] + $f[9]*$v[2]);
-}
-# print Dumper(@a_cart_pos_x, @a_cart_pos_y, @a_cart_pos_z);
-
-# hessian eigenvalues
-my @e_values = split('\s+', trim($data->{"calculation"}->{"dynmat"}->{"v"}->{"content"}));
-
-# hessian eigenvectors
-my @e_vectors = @{$data->{"calculation"}->{"dynmat"}->{"varray"}->{"eigenvectors"}->{"v"}};
-# print Dumper(@e_vectors);
-
-open( my $poscar_fh, ">", "DISPCAR" ) || die "Can't open DISPCAR file: $!";
-
-my @displacements = (-2, -1, 0, 1, 2); # hard-coded so far for 5-point stencil finite difference 1st deriv.
-for( my $i = 0; $i < scalar(@e_values); $i++)
-{
-    print "processing ".($i+1)." out ".scalar(@e_values)." eigenvalues\n";
-    my $ev = $e_values[$i]*(-1.0);
-    if($ev < 0.0){next;} # skip imaginary frequency
-
-    my $qi0 = sqrt((HBAR*CL)**2/(AM*sqrt($ev)*VaspToEv)); # mode quanta
-    # printf("%15.12f %15.12f\n", sqrt($ev)*VaspToEv, $qi0);
-
-    my @disps = split('\s+', trim($e_vectors[$i]));
-
-    foreach (@displacements)
+    if($line =~ /lattice parameter \(alat\)\s+=\s+([\d\.]+)/)
     {
-        print $poscar_fh sprintf("POSCAR: disp=%d, w=%8.5f meV, qi0=%5e\n", $_, sqrt($ev)*VaspToEv*1000, $qi0);
-        print $poscar_fh "1.00000\n";
-        print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $f[1], $f[2], $f[3]);
-        print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $f[4], $f[5], $f[6]);
-        print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $f[7], $f[8], $f[9]);
-        print $poscar_fh join(" ", uniq(@a_labels))."\n";
-        print $poscar_fh join(" ", @a_count)."\n";
-        print $poscar_fh "Cartesian\n";
-
-        for( my $j = 0; $j < scalar(@a_cart_pos_x); $j++)
-        {
-            my $sqrtm = sqrt($a_masses[$j]);
-            my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_/$sqrtm, $disps[3*$j+1]*$qi0*$_/$sqrtm, $disps[3*$j+2]*$qi0*$_/$sqrtm);
-            print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $a_cart_pos_x[$j]+$dx, $a_cart_pos_y[$j]+$dy, $a_cart_pos_z[$j]+$dz);
-        }
-        print $poscar_fh "\n";
+        $alat = $1;
+        printf("Found alat = %6.5f au\n", $alat)
     }
-    
+
+    if($line =~ /crystal axes: \(cart\. coord\. in units of alat\)/)
+    {
+        for (my $i=0; $i<3; $i++)
+        {
+                                    # a(1) = (   1.000000   0.000000   0.000000 )
+            my @t = (<$outcar_fh> =~ m/.+?(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/);
+            # This is how QE reads in the basis
+            for (my $j=0; $j<3; $j++)
+            {
+                $basis->[$i][$j] = $t[$j]*$alat/A2B;
+            }
+        }
+    }
+
+    if($line =~ /atomic species\s+valence\s+mass\s+pseudopotential/)
+    {
+        #while(my $next = <$outcar_fh>)
+        #{
+            # C              4.00    12.01100      C( 1.00)
+        #    if($next  =~ m/^\s+(\w+)\s+(\d+\.\d+)\s+(\d+\.\d+)/)
+        #    {
+                # print $next;
+        #        my ($i, $au, $atom_n, $atom_s, $x, $y, $z) = ($1, $2, $3, $4, $5, $6, $7);
+        #        print $cif_fh sprintf("%s%d %s %9.5f %9.5f %9.5f\n", $atom_s, $i, $atom_s, $x, $y, $z);
+                #push(@atoms_lines, sprintf("%s %.5f %.5f %.5f", $atom_s, $x, $y, $z));
+        #    }
+        #    else{last;}
+        #}
+    }
+
+    if($line =~ /Crystallographic axes/)
+    {
+        my $next = <$outcar_fh>; # empty line
+        $next = <$outcar_fh>; # site n.     atom                  positions (alat units)
+
+        my $c = 0;
+        while($next = <$outcar_fh>)
+        {
+            # 1           C   tau(   1) = (  -0.1047125   0.2990902   0.0108898  )
+            if($next  =~ m/^\s*\d+\s+(\w+).+?(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/)
+            {
+                push(@a_labels, $1);
+                $coord_frac->[$c][0] = $2; # x
+                $coord_frac->[$c][1] = $3; # y
+                $coord_frac->[$c][2] = $4; # z
+                $c += 1;
+            }else{last;}
+        }
+        $natoms = scalar(@a_labels);
+        print "Found $natoms atoms\n";
+    }
 }
 
-print "DISPCAR created\n";
-close($poscar_fh);
+open( my $dyncar_fh, "<", $ARGV[1]) || die "Can't open $ARGV[1]: $!\n";
+
+my (@eigen_vals, @eigen_vecs);
+while(my $line = <$dyncar_fh>)
+{
+    # omega( 1) =       1.939432 [THz] =      64.692486 [cm-1]
+    if($line =~ /\s*omega.+?([\d\.]+)\s*\[cm-1\]/)
+    {
+        push(@eigen_vals, $1);
+
+        my $vec;
+        for (my $i=0; $i<$natoms; $i++)
+        {
+            my @t = (<$dyncar_fh> =~ m/(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/);
+            my $xi = Math::Complex->make($t[0], $t[3]);
+            my $yi = Math::Complex->make($t[1], $t[4]);
+            my $zi = Math::Complex->make($t[2], $t[5]);
+
+            $vec .= join(' ', ($xi->abs(), $yi->abs(), $zi->abs()));
+        }
+        push(@eigen_vecs, $vec);
+    }
+}
+
+## creating XML file
+my $xml_basis;
+for (my $i=0; $i<3; $i++)
+{
+    $xml_basis .= "<v> ";
+    for (my $j=0; $j<3; $j++)
+    {
+        $xml_basis .= sprintf("%15.12f", $basis->[$j][$i])." ";
+    }
+    $xml_basis .= "</v>\n";
+}
+
+my $xml_positions;
+for (my $i=0; $i<$natoms; $i++)
+{
+    $xml_positions .= "<v> ".sprintf("%15.12f %15.12f %15.12f", $coord_frac->[$i][0], $coord_frac->[$i][1], $coord_frac->[$i][2])." </v>\n";
+}
+
+my $xml_out = <<END;
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<modeling>
+ <structure name="initialpos" >
+  <crystal>
+   <varray name="basis" >
+$xml_basis</varray>
+  </crystal>
+  <varray name="positions" >
+$xml_positions  </varray>
+ </structure>
+END
+
+print $xml_out;
 
 sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
 
