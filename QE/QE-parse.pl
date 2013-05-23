@@ -28,7 +28,7 @@ die( "\nUse: $0 <input.out> <dyn.out>\n" ) if ( scalar( @ARGV ) < 2 );
 
 open( my $outcar_fh, "<", $ARGV[0]) || die "Can't open $ARGV[0]: $!\n";
 
-my ($alat, $basis, $coord_cart, $natoms, @a_labels, @a_masses, %label_mass);
+my ($alat, $basis, $coord_frac, $natoms, @a_labels, @a_masses, %label_mass, $coord_cart);
 while(my $line = <$outcar_fh>)
 {
     if($line =~ /lattice parameter \(alat\)\s+=\s+([\d\.]+)/)
@@ -64,7 +64,7 @@ while(my $line = <$outcar_fh>)
         }
     }
 
-    if($line =~ /Cartesian axes/)
+    if($line =~ /Crystallographic axes/)
     {
         my $next = <$outcar_fh>; # empty line
         $next = <$outcar_fh>; # site n.     atom                  positions (alat units)
@@ -76,15 +76,17 @@ while(my $line = <$outcar_fh>)
             {
                 push(@a_labels, $1);
                 push(@a_masses, $label_mass{$1});
-                $coord_cart->[$#a_labels][0] = $2*(sqrt($basis->[0][0]**2 + $basis->[0][1]**2 + $basis->[0][2]**2)); # x
-                $coord_cart->[$#a_labels][1] = $3*(sqrt($basis->[1][0]**2 + $basis->[1][1]**2 + $basis->[1][2]**2)); # y
-                $coord_cart->[$#a_labels][2] = $4*(sqrt($basis->[2][0]**2 + $basis->[2][1]**2 + $basis->[2][2]**2)); # z
+                $coord_frac->[$#a_labels][0] = $2; # x
+                $coord_frac->[$#a_labels][1] = $3; # y
+                $coord_frac->[$#a_labels][2] = $4; # z
             }else{last;}
         }
         $natoms = scalar(@a_labels);
         print "Found $natoms atoms\n";
     }
 }
+
+$coord_cart = dirkar($coord_frac, $basis, $natoms);
 
 open( my $dyncar_fh, "<", $ARGV[1]) || die "Can't open $ARGV[1]: $!\n";
 
@@ -127,7 +129,7 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
     my @disps = split('\s+', trim($e_vectors[$i]));
 
-    my @displacements = (-1, 1); # hard-coded so far for the five-point stencil 1st deriv.
+    my @displacements = (0.0); # hard-coded so far for the five-point stencil 1st deriv.
     foreach (@displacements)
     {
         print $poscar_fh sprintf("QE flavored POSCAR: disp=%f, hw=%8.5f meV\n", $_, $ev*CmToEv*1000);
@@ -149,6 +151,24 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
 print "DISPCAR created\n";
 close($poscar_fh);
+
+sub dirkar {
+    my $vector = shift;
+    my $basis = shift;
+    my $total_atoms = shift;
+    my ($i,$v1,$v2,$v3);
+
+    for ($i=0; $i<$total_atoms; $i++) {
+        $v1 = $vector->[$i][0]*$basis->[0][0] + $vector->[$i][1]*$basis->[0][1] + $vector->[$i][2]*$basis->[0][2];
+        $v2 = $vector->[$i][0]*$basis->[1][0] + $vector->[$i][1]*$basis->[1][1] + $vector->[$i][2]*$basis->[1][2];
+        $v3 = $vector->[$i][0]*$basis->[2][0] + $vector->[$i][1]*$basis->[2][1] + $vector->[$i][2]*$basis->[2][2];
+        $vector->[$i][0] = $v1;
+        $vector->[$i][1] = $v2;
+        $vector->[$i][2] = $v3;
+    }
+
+    return ($vector);
+}
 
 sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
 
