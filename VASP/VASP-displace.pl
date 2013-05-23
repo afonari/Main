@@ -80,7 +80,7 @@ my ($coord_frac, $coord_cart, $natoms);
 
 @t = @{$data->{"structure"}->{"initialpos"}->{"varray"}->{"v"}};
 $natoms = scalar(@t);
-for my $i (0 .. $#t)
+for (my $i=0; $i<$natoms; $i++)
 {
     my @t1 = split(/\s+/, trim($t[$i]));
     $coord_frac->[$i][0] = $t1[0]; # x
