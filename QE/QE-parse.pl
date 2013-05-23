@@ -43,7 +43,7 @@ while(my $line = <$outcar_fh>)
         {
                                     # a(1) = (   1.000000   0.000000   0.000000 )
             my @t = (<$outcar_fh> =~ m/.+?(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/);
-            # This is how QE reads in the basis
+            # This is how VASP reads in the basis
             for (my $j=0; $j<3; $j++)
             {
                 $basis->[$j][$i] = $t[$j]*$alat/A2B;
@@ -141,7 +141,7 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
         {
             my $sqrtm = sqrt($a_masses[$j]);
             my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_, $disps[3*$j+1]*$qi0*$_, $disps[3*$j+2]*$qi0*$_);
-            print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $coord_cart->[$j][0]+$dx, $coord_cart->[$j][1]+$dy, $coord_cart->[$j][2]+$dz);
+            print $poscar_fh sprintf("%s %15.12f %15.12f %15.12f\n", $a_labels[$j], $coord_cart->[$j][0]+$dx, $coord_cart->[$j][1]+$dy, $coord_cart->[$j][2]+$dz);
         }
         print $poscar_fh "\n";
     }
