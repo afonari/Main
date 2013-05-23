@@ -27,7 +27,7 @@ die( "\nUse: $0 <input.out> <dyn.out>\n" ) if ( scalar( @ARGV ) < 2 );
 
 open( my $outcar_fh, "<", $ARGV[0]) || die "Can't open $ARGV[0]: $!\n";
 
-my ($alat, $basis, $coord_frac, $natoms, @a_labels, @a_masses, %label_mass);
+my ($alat, $basis, $coord_cart, $natoms, @a_labels, @a_masses, %label_mass);
 while(my $line = <$outcar_fh>)
 {
     if($line =~ /lattice parameter \(alat\)\s+=\s+([\d\.]+)/)
@@ -63,12 +63,11 @@ while(my $line = <$outcar_fh>)
         }
     }
 
-    if($line =~ /Crystallographic axes/)
+    if($line =~ /Cartesian axes/)
     {
         my $next = <$outcar_fh>; # empty line
         $next = <$outcar_fh>; # site n.     atom                  positions (alat units)
 
-        my $c = 0;
         while($next = <$outcar_fh>)
         {
             # 1           C   tau(   1) = (  -0.1047125   0.2990902   0.0108898  )
@@ -76,10 +75,9 @@ while(my $line = <$outcar_fh>)
             {
                 push(@a_labels, $1);
                 push(@a_masses, $label_mass{$1});
-                $coord_frac->[$c][0] = $2; # x
-                $coord_frac->[$c][1] = $3; # y
-                $coord_frac->[$c][2] = $4; # z
-                $c += 1;
+                $coord_cart->[$#a_labels][0] = $2*(sqrt($basis->[0][0]**2 + $basis->[0][1]**2 + $basis->[0][2]**2)); # x
+                $coord_cart->[$#a_labels][1] = $3*(sqrt($basis->[1][0]**2 + $basis->[1][1]**2 + $basis->[1][2]**2)); # y
+                $coord_cart->[$#a_labels][2] = $4*(sqrt($basis->[2][0]**2 + $basis->[2][1]**2 + $basis->[2][2]**2)); # z
             }else{last;}
         }
         $natoms = scalar(@a_labels);
@@ -89,13 +87,13 @@ while(my $line = <$outcar_fh>)
 
 open( my $dyncar_fh, "<", $ARGV[1]) || die "Can't open $ARGV[1]: $!\n";
 
-my (@eigen_vals, @eigen_vecs);
+my (@e_values, @e_vectors);
 while(my $line = <$dyncar_fh>)
 {
     # omega( 1) =       1.939432 [THz] =      64.692486 [cm-1]
     if($line =~ /\s*omega.+?([\d\.]+)\s*\[cm-1\]/)
     {
-        push(@eigen_vals, $1);
+        push(@e_values, $1);
 
         my $vec;
         for (my $i=0; $i<$natoms; $i++)
@@ -107,90 +105,51 @@ while(my $line = <$dyncar_fh>)
 
             $vec .= sprintf("%10.8e %10.8e %10.8e", $xi->abs(), $yi->abs(), $zi->abs())." ";
         }
-        push(@eigen_vecs, $vec);
+        push(@e_vectors, $vec);
     }
 }
 
-## creating XML file
-my $xml_labels_indx;
-for (my $i=0; $i<$natoms; $i++)
+open( my $poscar_fh, ">", "DISPCAR" ) || die "Can't open DISPCAR file: $!";
+
+## the differences between QE and VASP:
+#  1. frequencies are positive and given in cm-1
+#  2. eigenvectors are already normliazed by sqrt(mass)
+##
+for( my $i = 0; $i < scalar(@e_values); $i++)
 {
-    $xml_labels_indx .= "<rc><c>".$a_labels[$i]." </c><c>   1</c></rc>\n";
-}
-my $xml_labels_masses;
-foreach my $key (keys %label_mass)
-{
-    $xml_labels_masses .= "<rc><c>1</c><c> ".$key." </c><c> ".$label_mass{$key}." </c><c>4.0</c><c> GT rules </c></rc>\n";
-}
-my $xml_basis;
-for (my $i=0; $i<3; $i++)
-{
-    $xml_basis .= "<v> ";
-    for (my $j=0; $j<3; $j++)
+    print "processing ".($i+1)." out ".scalar(@e_values)." eigenvalues\n";
+    my $ev = $e_values[$i];
+    if($ev < 0.0){next;} # skip imaginary frequency
+
+    my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*VaspToEv/VaspToCm)); # mode quanta
+    # printf("%15.12f %15.12f\n", sqrt($ev)*VaspToEv, $qi0);
+
+    my @disps = split('\s+', trim($e_vectors[$i]));
+
+    my @displacements = (-1, -0.5, -0.1, -0.01, 0.5, 1); # hard-coded so far for the five-point stencil 1st deriv.
+    foreach (@displacements)
     {
-        $xml_basis .= sprintf("%15.12f", $basis->[$j][$i])." ";
+        print $poscar_fh sprintf("POSCAR: disp=%f, w=%8.5f meV\n", $_, sqrt($ev)*VaspToEv*1000);
+        print $poscar_fh "1.00000\n";
+        print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][0], $basis->[1][0], $basis->[2][0]);
+        print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][1], $basis->[1][1], $basis->[2][1]);
+        print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][2], $basis->[1][2], $basis->[2][2]);
+        print $poscar_fh "_VASP SPECIFIC ATOM LABELS_\n"; # following KISS, will not generate those lines
+        print $poscar_fh "_VASP SPECIFIC ATOM COUNTS_\n"; # ...
+        print $poscar_fh "Cartesian\n";
+
+        for( my $j = 0; $j < $natoms; $j++)
+        {
+            my $sqrtm = sqrt($a_masses[$j]);
+            my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_/$sqrtm, $disps[3*$j+1]*$qi0*$_/$sqrtm, $disps[3*$j+2]*$qi0*$_/$sqrtm);
+            print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $coord_cart->[$j][0]+$dx, $coord_cart->[$j][1]+$dy, $coord_cart->[$j][2]+$dz);
+        }
+        print $poscar_fh "\n";
     }
-    $xml_basis .= "</v>\n";
 }
 
-my $xml_positions;
-for (my $i=0; $i<$natoms; $i++)
-{
-    $xml_positions .= "<v> ".sprintf("%15.12f %15.12f %15.12f", $coord_frac->[$i][0], $coord_frac->[$i][1], $coord_frac->[$i][2])." </v>\n";
-}
-
-my $xml_eigen_vals = join(' ', @eigen_vals);
-
-my $xml_eigen_vecs;
-for (my $i=0; $i<scalar(@eigen_vals); $i++)
-{
-    $xml_eigen_vecs .= "<v> ".$eigen_vecs[$i]." </v>\n";
-}
-my $xml_out = <<END;
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<modeling>
- <atominfo>
-  <atoms>      36 </atoms>
-  <types>       2 </types>
-  <array name="atoms" >
-   <dimension dim="1">ion</dimension>
-   <field type="string">element</field>
-   <field type="int">atomtype</field>
-   <set>
-$xml_labels_indx</set>
-  </array>
-  <array name="atomtypes" >
-   <dimension dim="1">type</dimension>
-   <field type="int">atomspertype</field>
-   <field type="string">element</field>
-   <field>mass</field>
-   <field>valence</field>
-   <field type="string">pseudopotential</field>
-   <set>
-$xml_labels_masses</set>
-  </array>
- </atominfo>
- <structure name="initialpos" >
-  <crystal>
-   <varray name="basis" >
-$xml_basis</varray>
-  </crystal>
-  <varray name="positions" >
-$xml_positions</varray>
- </structure>
- <calculation>
-  <dynmat>
-   <v name="eigenvalues">$xml_eigen_vals</v>
-   <varray name="eigenvectors" >
-$xml_eigen_vecs </varray>
-  </dynmat>
- </calculation>
-</modeling>
-
-END
-
-open( my $vasprun_fh, ">", "vasprun.xml") || die "Can't open vasprun.xml.gen: $!\n";
-print $vasprun_fh $xml_out;
+print "DISPCAR created\n";
+close($poscar_fh);
 
 sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
 
