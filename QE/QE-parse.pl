@@ -22,6 +22,7 @@ use constant AMU => 1.6605402e-27;   # [kg]
 use constant VaspToEv => sqrt(EV/AMU)/Angstrom/(2*PI)*PlanckConstant; # [eV] 6.46541380e-2
 use constant VaspToCm =>  VaspToEv/(1.2398419e-4); # [cm^-1] 521.47083
 use constant A2B => 1.88972613289; # ANGSTROM_TO_BOHR
+use constant CmToEv => VaspToEv/VaspToCm;
 
 die( "\nUse: $0 <input.out> <dyn.out>\n" ) if ( scalar( @ARGV ) < 2 );
 
@@ -45,7 +46,7 @@ while(my $line = <$outcar_fh>)
             # This is how QE reads in the basis
             for (my $j=0; $j<3; $j++)
             {
-                $basis->[$i][$j] = $t[$j]*$alat/A2B;
+                $basis->[$j][$i] = $t[$j]*$alat/A2B;
             }
         }
     }
@@ -113,7 +114,7 @@ open( my $poscar_fh, ">", "DISPCAR" ) || die "Can't open DISPCAR file: $!";
 
 ## the differences between QE and VASP:
 #  1. frequencies are positive and given in cm-1
-#  2. eigenvectors are already normliazed by sqrt(mass)
+#  2. eigenvectors are already normalized by sqrt(mass)
 ##
 for( my $i = 0; $i < scalar(@e_values); $i++)
 {
@@ -121,27 +122,25 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     my $ev = $e_values[$i];
     if($ev < 0.0){next;} # skip imaginary frequency
 
-    my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*VaspToEv/VaspToCm)); # mode quanta
+    my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*CmToEv)); # mode quanta
     # printf("%15.12f %15.12f\n", sqrt($ev)*VaspToEv, $qi0);
 
     my @disps = split('\s+', trim($e_vectors[$i]));
 
-    my @displacements = (-1, -0.5, -0.1, -0.01, 0.5, 1); # hard-coded so far for the five-point stencil 1st deriv.
+    my @displacements = (-1, 1); # hard-coded so far for the five-point stencil 1st deriv.
     foreach (@displacements)
     {
-        print $poscar_fh sprintf("POSCAR: disp=%f, w=%8.5f meV\n", $_, sqrt($ev)*VaspToEv*1000);
+        print $poscar_fh sprintf("QE flavored POSCAR: disp=%f, hw=%8.5f meV\n", $_, $ev*CmToEv*1000);
         print $poscar_fh "1.00000\n";
         print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][0], $basis->[1][0], $basis->[2][0]);
         print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][1], $basis->[1][1], $basis->[2][1]);
         print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][2], $basis->[1][2], $basis->[2][2]);
-        print $poscar_fh "_VASP SPECIFIC ATOM LABELS_\n"; # following KISS, will not generate those lines
-        print $poscar_fh "_VASP SPECIFIC ATOM COUNTS_\n"; # ...
         print $poscar_fh "Cartesian\n";
 
         for( my $j = 0; $j < $natoms; $j++)
         {
             my $sqrtm = sqrt($a_masses[$j]);
-            my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_/$sqrtm, $disps[3*$j+1]*$qi0*$_/$sqrtm, $disps[3*$j+2]*$qi0*$_/$sqrtm);
+            my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_, $disps[3*$j+1]*$qi0*$_, $disps[3*$j+2]*$qi0*$_);
             print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $coord_cart->[$j][0]+$dx, $coord_cart->[$j][1]+$dy, $coord_cart->[$j][2]+$dz);
         }
         print $poscar_fh "\n";
