@@ -4,7 +4,7 @@
 # Copyright (c) "2012, Alexandr Fonari
 #                URL: https://github.com/alexandr-fonari/Main/tree/master/CRYSTAL
 #                License: MIT License
-# Version 0.99
+# Version 1.0 RC
 #
 # ===== ## =====
 # This script is a fork of (copyrighted accordingly):
@@ -14,13 +14,21 @@
 #   sung.sakong _at_ uni-due.de
 #   ver 0.5  4. June 2007
 #   url: http://www.uni-due.de/~hp0058/vmdplugins/utilities/xdatgen.c
+###
 #
-# Crystallographic conversions are heavily based on and copyrighted accordingly (some SUBs are copy/pasted):
-# http://theory.cm.utexas.edu/vasp/scripts/src/Vasp.pm
+#   Crystallographic conversions are heavily based on and copyrighted accordingly (some SUBs are copy/pasted):
+#   http://theory.cm.utexas.edu/vasp/scripts/src/Vasp.pm
 # ===== ## =====
+###
+
+###
+# displacements array:
+my @displacements = (-1, -0.5, -0.1, 0.1, 0.5, 1);
 #
-# I hope you will like it,
-# Sasha.
+# things to note:
+# 1. Refer to https://en.wikipedia.org/wiki/Five-point_stencil for finite difference method
+# 2. The smaller the displacement - the better, as long as computational accuracy allows.
+# 3. Enjoy!
 
 use strict;
 use warnings;
@@ -39,16 +47,26 @@ use constant AMU => 1.6605402e-27;   # [kg]
 use constant VaspToEv => sqrt(EV/AMU)/Angstrom/(2*PI)*PlanckConstant; # [eV] 6.46541380e-2
 use constant VaspToCm =>  VaspToEv/(1.2398419e-4); # [cm^-1] 521.47083
 
+if (-f "vasprun.xml")
+{
+    print "Using vasprun.xml file from the current directory\n";
+}else{
+    print "Please place vasprun.xml file in the current directory\n";
+    die;
+}
+
 my $xml = new XML::Simple();
 my $data = $xml->XMLin("vasprun.xml");
 
-my (@a_labels, @a_indx, @a_masses, @a_count, %label_mass);
+my (@a_labels, @a_indx, @a_masses, @a_count, %label_mass, $poscar_atom_labels_print, $poscar_atom_counts_print);
 
 my @t = @{$data->{"atominfo"}->{"array"}->{"atomtypes"}->{"set"}->{"rc"}};
 foreach (@t)
 {
     my ($label, $mass) = ( trim($_->{"c"}[1]), trim($_->{"c"}[2]) );
     $label_mass{$label} = $mass;
+    $poscar_atom_labels_print .= $label." ";
+    $poscar_atom_counts_print .= trim($_->{"c"}[0])." ";
 }
 # print Dumper( \% label_mass);
 
@@ -113,16 +131,15 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
     my @disps = split('\s+', trim($e_vectors[$i]));
 
-    my @displacements = (-1, -0.5, -0.1, -0.01, 0.5, 1); # hard-coded so far for the five-point stencil 1st deriv.
     foreach (@displacements)
     {
-        print $poscar_fh sprintf("POSCAR: disp=%f, w=%8.5f meV\n", $_, sqrt($ev)*VaspToEv*1000);
+        print $poscar_fh sprintf("VASP5 POSCAR: disp=%f, hv=%8.5f meV\n", $_, sqrt($ev)*VaspToEv*1000);
         print $poscar_fh "1.00000\n";
         print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][0], $basis->[1][0], $basis->[2][0]);
         print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][1], $basis->[1][1], $basis->[2][1]);
         print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][2], $basis->[1][2], $basis->[2][2]);
-        print $poscar_fh "_VASP SPECIFIC ATOM LABELS_\n"; # following KISS, will not generate those lines
-        print $poscar_fh "_VASP SPECIFIC ATOM COUNTS_\n"; # ...
+        print $poscar_fh trim($poscar_atom_labels_print)."\n";
+        print $poscar_fh trim($poscar_atom_counts_print)."\n";
         print $poscar_fh "Cartesian\n";
 
         for( my $j = 0; $j < $natoms; $j++)
@@ -139,9 +156,6 @@ print "DISPCAR created\n";
 close($poscar_fh);
 
 sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
-
-# http://stackoverflow.com/questions/439647/how-do-i-print-unique-elements-in-perl-array
-# sub uniq {local %_; grep {!$_{$_}++} @_}
 
 sub dirkar {
     my $vector = shift;
