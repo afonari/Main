@@ -94,7 +94,7 @@ my (@e_values, @e_vectors);
 while(my $line = <$dyncar_fh>)
 {
     # omega( 1) =       1.939432 [THz] =      64.692486 [cm-1]
-    if($line =~ /\s*omega.+?([\d\.]+)\s*\[cm-1\]/)
+    if($line =~ /\s*omega.+?([-\d\.]+)\s*\[cm-1\]/)
     {
         push(@e_values, $1);
 
@@ -125,25 +125,26 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     if($ev < 0.0){next;} # skip imaginary frequency
 
     my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*CmToEv)); # mode quanta
+    #my $qi0 = sqrt(HBAR/($ev*CmToEv)); # mode quanta
     # printf("%15.12f %15.12f\n", sqrt($ev)*VaspToEv, $qi0);
 
     my @disps = split('\s+', trim($e_vectors[$i]));
 
-    my @displacements = (0.0); # hard-coded so far for the five-point stencil 1st deriv.
+    my @displacements = (-1.0); # hard-coded so far for the five-point stencil 1st deriv.
     foreach (@displacements)
     {
         print $poscar_fh sprintf("QE flavored POSCAR: disp=%f, hw=%8.5f meV\n", $_, $ev*CmToEv*1000);
         print $poscar_fh "1.00000\n";
-        print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][0], $basis->[1][0], $basis->[2][0]);
-        print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][1], $basis->[1][1], $basis->[2][1]);
-        print $poscar_fh sprintf("%15.12f %15.12f %15.12f\n", $basis->[0][2], $basis->[1][2], $basis->[2][2]);
+        print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis->[0][0], $basis->[1][0], $basis->[2][0]);
+        print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis->[0][1], $basis->[1][1], $basis->[2][1]);
+        print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis->[0][2], $basis->[1][2], $basis->[2][2]);
         print $poscar_fh "Cartesian\n";
 
         for( my $j = 0; $j < $natoms; $j++)
         {
             my $sqrtm = sqrt($a_masses[$j]);
             my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_, $disps[3*$j+1]*$qi0*$_, $disps[3*$j+2]*$qi0*$_);
-            print $poscar_fh sprintf("%s %15.12f %15.12f %15.12f\n", $a_labels[$j], $coord_cart->[$j][0]+$dx, $coord_cart->[$j][1]+$dy, $coord_cart->[$j][2]+$dz);
+            print $poscar_fh sprintf("%s %10.7f %10.7f %10.7f\n", $a_labels[$j], $coord_cart->[$j][0]+$dx, $coord_cart->[$j][1]+$dy, $coord_cart->[$j][2]+$dz);
         }
         print $poscar_fh "\n";
     }
