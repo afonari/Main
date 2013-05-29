@@ -125,7 +125,6 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     if($ev < 0.0){next;} # skip imaginary frequency
 
     my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*CmToEv)); # mode quanta
-    #my $qi0 = sqrt(HBAR/($ev*CmToEv)); # mode quanta
     # printf("%15.12f %15.12f\n", sqrt($ev)*VaspToEv, $qi0);
 
     my @disps = split('\s+', trim($e_vectors[$i]));
