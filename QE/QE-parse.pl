@@ -4,11 +4,13 @@
 #                URL: https://github.com/alexandr-fonari/Main/tree/master/VASP
 #                License: MIT License
 
+
+my @displacements = (-1.0); # hard-coded so far for the five-point stencil 1st deriv.
+
+
 use strict;
 use warnings;
-use XML::Simple;
 use Data::Dumper;
-use Math::Complex;
 
 # physical constants in eV, Ang and s
 use constant PI => 4 * atan2(1, 1);
@@ -102,11 +104,11 @@ while(my $line = <$dyncar_fh>)
         for (my $i=0; $i<$natoms; $i++)
         {
             my @t = (<$dyncar_fh> =~ m/(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/);
-            my $xi = Math::Complex->make($t[0], $t[3]);
-            my $yi = Math::Complex->make($t[1], $t[4]);
-            my $zi = Math::Complex->make($t[2], $t[5]);
+            my $xi = sqrt($t[0]**2 + $t[1]**2);#  Computing absolute value of a complex number (from GCC manual):
+            my $yi = sqrt($t[2]**2 + $t[3]**2);#  If A is type COMPLEX, the absolute value is computed as:
+            my $zi = sqrt($t[4]**2 + $t[5]**2);#      SQRT(REALPART(A)**2+IMAGPART(A)**2)
 
-            $vec .= sprintf("%10.8e %10.8e %10.8e", $xi->abs(), $yi->abs(), $zi->abs())." ";
+            $vec .= sprintf("%10.8e %10.8e %10.8e", $xi, $yi, $zi)." ";
         }
         push(@e_vectors, $vec);
     }
@@ -129,7 +131,6 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
     my @disps = split('\s+', trim($e_vectors[$i]));
 
-    my @displacements = (-1.0); # hard-coded so far for the five-point stencil 1st deriv.
     foreach (@displacements)
     {
         print $poscar_fh sprintf("QE flavored POSCAR: disp=%f, hw=%8.5f meV\n", $_, $ev*CmToEv*1000);
@@ -142,7 +143,7 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
         for( my $j = 0; $j < $natoms; $j++)
         {
             my $sqrtm = sqrt($a_masses[$j]);
-            my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_, $disps[3*$j+1]*$qi0*$_, $disps[3*$j+2]*$qi0*$_);
+            my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_/$sqrtm, $disps[3*$j+1]*$qi0*$_/$sqrtm, $disps[3*$j+2]*$qi0*$_/$sqrtm);
             print $poscar_fh sprintf("%s %10.7f %10.7f %10.7f\n", $a_labels[$j], $coord_cart->[$j][0]+$dx, $coord_cart->[$j][1]+$dy, $coord_cart->[$j][2]+$dz);
         }
         print $poscar_fh "\n";
