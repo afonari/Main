@@ -104,9 +104,10 @@ while(my $line = <$dyncar_fh>)
         for (my $i=0; $i<$natoms; $i++)
         {
             my @t = (<$dyncar_fh> =~ m/(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/);
-            my $xi = sqrt($t[0]**2 + $t[1]**2);#  Computing absolute value of a complex number (from GCC manual):
-            my $yi = sqrt($t[2]**2 + $t[3]**2);#  If A is type COMPLEX, the absolute value is computed as:
-            my $zi = sqrt($t[4]**2 + $t[5]**2);#      SQRT(REALPART(A)**2+IMAGPART(A)**2)
+            my $xi = get_phase($t[0])*sqrt($t[0]**2 + $t[1]**2);#  Computing absolute value of a complex number (from GCC manual):
+            my $yi = get_phase($t[2])*sqrt($t[2]**2 + $t[3]**2);#  If A is type COMPLEX, the absolute value is computed as:
+            my $zi = get_phase($t[4])*sqrt($t[4]**2 + $t[5]**2);#      SQRT(REALPART(A)**2+IMAGPART(A)**2)
+                                                                #  Phase is just the sign of the realpart
 
             $vec .= sprintf("%10.8e %10.8e %10.8e", $xi, $yi, $zi)." ";
         }
@@ -171,6 +172,7 @@ sub dirkar {
     return ($vector);
 }
 
+sub get_phase{ my $r=shift; return $r/abs($r);}
 sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
 
 # http://stackoverflow.com/questions/439647/how-do-i-print-unique-elements-in-perl-array
