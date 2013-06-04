@@ -110,6 +110,7 @@ while(my $line = <$dyncar_fh>)
                                                                 #  Phase is just the sign of the realpart
 
             $vec .= sprintf("%10.8e %10.8e %10.8e", $xi, $yi, $zi)." ";
+            # print get_phase($t[0])." ".get_phase($t[2])." ".get_phase($t[4])."\n";
         }
         push(@e_vectors, $vec);
     }
