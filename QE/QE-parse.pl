@@ -114,16 +114,18 @@ while(my $line = <$dyncar_fh>)
         {
             my ($xr, $xi, $yr, $yi, $zr, $zi) = (<$dyncar_fh> =~ m/(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/);
             my ($thx, $thy, $thz) = (atan2($xi, $xr), atan2($yi, $yr), atan2($zi, $zr));
-            my $q = 0.2267;
-            my ($Rx, $Ry, $Rz) = ((PI - atan2($xi, $xr)/$q), (PI - atan2($xi, $xr)/$q), (PI - atan2($xi, $xr)/$q));
+            # my ($Rx, $Ry, $Rz) = ((PI - atan2($xi, $xr)/$q), (PI - atan2($xi, $xr)/$q), (PI - atan2($xi, $xr)/$q));
             #my $xi = get_phase($t[0])*sqrt($t[0]**2 + $t[1]**2);#  Computing absolute value of a complex number (from GCC manual):
             #my $yi = get_phase($t[2])*sqrt($t[2]**2 + $t[3]**2);#  If A is type COMPLEX, the absolute value is computed as:
             #my $zi = get_phase($t[4])*sqrt($t[4]**2 + $t[5]**2);#      SQRT(REALPART(A)**2+IMAGPART(A)**2)
-                                                                #  Phase is just the sign of the realpart
-            
-            print "phase $thx $thy $thz\n";
+
+            my $f = $ARGV[2]; #6.0;
+            #print $thz." ".($thz+$qz*5.953001*$f)." ".($qz*5.953001*$f)." ".sin($thz+$qz*5.953001*$f)."\n";
+            my $t =(cos($thz+$qz*5.953001*$f)+cos($thz))/2.0;
+            print $t."\n";
             $vec .= sprintf("%10.8e %10.8e %10.8e", $xi, $yi, $zi)." ";
             # print get_phase($t[0])." ".get_phase($t[2])." ".get_phase($t[4])."\n";
+            #die;
         }
         push(@e_vectors, $vec);
         die;
