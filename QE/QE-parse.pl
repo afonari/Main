@@ -92,9 +92,18 @@ $coord_cart = dirkar($coord_frac, $basis, $natoms);
 
 open( my $dyncar_fh, "<", $ARGV[1]) || die "Can't open $ARGV[1]: $!\n";
 
-my (@e_values, @e_vectors);
+my ($qx, $qy, $qz, @e_values, @e_vectors);
 while(my $line = <$dyncar_fh>)
 {
+    # q =       0.0000      0.0000     -0.6802
+    if($line =~ /\s*q\s+=\s+([-\d\.]+)\s+([-\d\.]+)\s+([-\d\.]+)/)
+    {
+        ($qx, $qy, $qz) = ($1, $2, $3);
+        print "Found q point: $qx, $qy, $qz 2pi/alat\n";
+        ($qx, $qy, $qz) *= 2*PI/($alat/A2B);
+        print "Found q point: $qx, $qy, $qz 1/A\n";
+
+    }
     # omega( 1) =       1.939432 [THz] =      64.692486 [cm-1]
     if($line =~ /\s*omega.+?([-\d\.]+)\s*\[cm-1\]/)
     {
@@ -103,16 +112,21 @@ while(my $line = <$dyncar_fh>)
         my $vec;
         for (my $i=0; $i<$natoms; $i++)
         {
-            my @t = (<$dyncar_fh> =~ m/(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/);
-            my $xi = get_phase($t[0])*sqrt($t[0]**2 + $t[1]**2);#  Computing absolute value of a complex number (from GCC manual):
-            my $yi = get_phase($t[2])*sqrt($t[2]**2 + $t[3]**2);#  If A is type COMPLEX, the absolute value is computed as:
-            my $zi = get_phase($t[4])*sqrt($t[4]**2 + $t[5]**2);#      SQRT(REALPART(A)**2+IMAGPART(A)**2)
+            my ($xr, $xi, $yr, $yi, $zr, $zi) = (<$dyncar_fh> =~ m/(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/);
+            my ($thx, $thy, $thz) = (atan2($xi, $xr), atan2($yi, $yr), atan2($zi, $zr));
+            my $q = 0.2267;
+            my ($Rx, $Ry, $Rz) = ((PI - atan2($xi, $xr)/$q), (PI - atan2($xi, $xr)/$q), (PI - atan2($xi, $xr)/$q));
+            #my $xi = get_phase($t[0])*sqrt($t[0]**2 + $t[1]**2);#  Computing absolute value of a complex number (from GCC manual):
+            #my $yi = get_phase($t[2])*sqrt($t[2]**2 + $t[3]**2);#  If A is type COMPLEX, the absolute value is computed as:
+            #my $zi = get_phase($t[4])*sqrt($t[4]**2 + $t[5]**2);#      SQRT(REALPART(A)**2+IMAGPART(A)**2)
                                                                 #  Phase is just the sign of the realpart
-
+            
+            print "phase $thx $thy $thz\n";
             $vec .= sprintf("%10.8e %10.8e %10.8e", $xi, $yi, $zi)." ";
             # print get_phase($t[0])." ".get_phase($t[2])." ".get_phase($t[4])."\n";
         }
         push(@e_vectors, $vec);
+        die;
     }
 }
 
@@ -173,8 +187,9 @@ sub dirkar {
     return ($vector);
 }
 
-sub get_phase{ my $r=shift; return $r/abs($r);}
+# sub get_phase{ my $r=shift; return $r/abs($r);}
 sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
-
+sub rad2deg{my $rad=shift; return ($rad/PI)*180.0;}
+sub sc_fact{my $q=shift; }
 # http://stackoverflow.com/questions/439647/how-do-i-print-unique-elements-in-perl-array
 sub uniq {local %_; grep {!$_{$_}++} @_}
