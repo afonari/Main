@@ -3,10 +3,26 @@
 # Copyright (c) "2012, Alexandr Fonari
 #                URL: https://github.com/alexandr-fonari/Main/tree/master/VASP
 #                License: MIT License
-
-
+#
+# ===== ## =====
+# This script is a fork of (copyrighted accordingly):
+#
+#   Program: xdatgen
+#   Sung Sakong, PhD
+#   sung.sakong _at_ uni-due.de
+#   ver 0.5  4. June 2007
+#   url: http://www.uni-due.de/~hp0058/vmdplugins/utilities/xdatgen.c
+###
+#
+#   Crystallographic conversions are heavily based on and copyrighted accordingly (some SUBs are copy/pasted):
+#   http://theory.cm.utexas.edu/vasp/scripts/src/Vasp.pm
+# ===== ## =====
+##
+#
+#
 my @displacements = (-1.0); # hard-coded so far for the five-point stencil 1st deriv.
-
+#
+##  ============== EDIT BELOW WITH CAUTION!! ============
 
 use strict;
 use warnings;
@@ -30,7 +46,7 @@ die( "\nUse: $0 <input.out> <dyn.out>\n" ) if ( scalar( @ARGV ) < 2 );
 
 open( my $outcar_fh, "<", $ARGV[0]) || die "Can't open $ARGV[0]: $!\n";
 
-my ($alat, $basis, $coord_frac, $natoms, @a_labels, @a_masses, %label_mass, $coord_cart);
+my ($alat, $basis, $coord_frac, $natoms, @a_labels, @a_masses, %label_mass, $coord_cart, @r);
 while(my $line = <$outcar_fh>)
 {
     if($line =~ /lattice parameter \(alat\)\s+=\s+([\d\.]+)/)
@@ -50,6 +66,7 @@ while(my $line = <$outcar_fh>)
             {
                 $basis->[$j][$i] = $t[$j]*$alat/A2B;
             }
+            $r[$i] = sqrt($basis->[0][$i]**2 + $basis->[1][$i]**2 + $basis->[2][$i]**2)
         }
     }
 
@@ -92,18 +109,19 @@ $coord_cart = dirkar($coord_frac, $basis, $natoms);
 
 open( my $dyncar_fh, "<", $ARGV[1]) || die "Can't open $ARGV[1]: $!\n";
 
-my ($qx, $qy, $qz, @e_values, @e_vectors);
+my (@q, @e_values, @e_vectors);
 while(my $line = <$dyncar_fh>)
 {
     # q =       0.0000      0.0000     -0.6802
-    if($line =~ /\s*q\s+=\s+([-\d\.]+)\s+([-\d\.]+)\s+([-\d\.]+)/)
+    if($line =~ /\s*q\s+=\s+([-\d\.]+)\s+([-\d\.]+)\s+([-\d\.]+)/) # its Cartesian (1/length)
     {
-        ($qx, $qy, $qz) = ($1, $2, $3);
-        print "Found q point: $qx, $qy, $qz 2pi/alat\n";
-        ($qx, $qy, $qz) *= 2*PI/($alat/A2B);
-        print "Found q point: $qx, $qy, $qz 1/A\n";
+        @q = ($1, $2, $3);
+        #print "Found q point: $qx, $qy, $qz 2pi/alat\n";
+        @q = map { $_ *  2*PI/($alat/A2B) } @q;
+        #print "Found q point: $qx, $qy, $qz 1/A\n";
 
     }
+
     # omega( 1) =       1.939432 [THz] =      64.692486 [cm-1]
     if($line =~ /\s*omega.+?([-\d\.]+)\s*\[cm-1\]/)
     {
@@ -113,22 +131,23 @@ while(my $line = <$dyncar_fh>)
         for (my $i=0; $i<$natoms; $i++)
         {
             my ($xr, $xi, $yr, $yi, $zr, $zi) = (<$dyncar_fh> =~ m/(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/);
-            my ($thx, $thy, $thz) = (atan2($xi, $xr), atan2($yi, $yr), atan2($zi, $zr));
-            # my ($Rx, $Ry, $Rz) = ((PI - atan2($xi, $xr)/$q), (PI - atan2($xi, $xr)/$q), (PI - atan2($xi, $xr)/$q));
-            #my $xi = get_phase($t[0])*sqrt($t[0]**2 + $t[1]**2);#  Computing absolute value of a complex number (from GCC manual):
-            #my $yi = get_phase($t[2])*sqrt($t[2]**2 + $t[3]**2);#  If A is type COMPLEX, the absolute value is computed as:
-            #my $zi = get_phase($t[4])*sqrt($t[4]**2 + $t[5]**2);#      SQRT(REALPART(A)**2+IMAGPART(A)**2)
+            my @ph = (atan2($xi, $xr), atan2($yi, $yr), atan2($zi, $zr)); # phases
+            my @f = (d0z(2*PI,$q[0]*$r[0]), d0z(2*PI,$q[1]*$r[1]), d0z(2*PI,$q[2]*$r[2]));
 
-            my $f = $ARGV[2]; #6.0;
-            #print $thz." ".($thz+$qz*5.953001*$f)." ".($qz*5.953001*$f)." ".sin($thz+$qz*5.953001*$f)."\n";
-            my $t =(cos($thz+$qz*5.953001*$f)+cos($thz))/2.0;
-            print $t."\n";
-            $vec .= sprintf("%10.8e %10.8e %10.8e", $xi, $yi, $zi)." ";
+            #my $tz_i =(sin($phz+$qz*$r[2]*$fz)-sin($phz))/2.0; this is THE CHECK!
+            #print $s[2]."\n";
+
+            my @s;
+            for (my $j=0; $j<3; $j++){
+                $s[$j] = (cos($ph[$j]+$q[$j]*$r[$j]*$f[$j])+cos($ph[$j]))/2.0;
+            }
+
+            $vec .= sprintf("%10.6f %10.6f %10.6f", abs($xr)*$s[0], abs($yr)*$s[1], abs($zr)*$s[2])." ";
+            #print sprintf("%10.6f %10.6f %10.6f", abs($xr)*$s[0], abs($yr)*$s[1], abs($zr)*$s[2])."\n";
             # print get_phase($t[0])." ".get_phase($t[2])." ".get_phase($t[4])."\n";
             #die;
         }
         push(@e_vectors, $vec);
-        die;
     }
 }
 
@@ -189,9 +208,24 @@ sub dirkar {
     return ($vector);
 }
 
-# sub get_phase{ my $r=shift; return $r/abs($r);}
-sub trim{ my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
-sub rad2deg{my $rad=shift; return ($rad/PI)*180.0;}
-sub sc_fact{my $q=shift; }
+sub dot_product {
+    my $coordinates1 = shift;
+    my $coordinates2 = shift;
+    my $total_atoms = shift;
+
+    my ($i,$j);
+    my $mag = 0;
+
+    for ($i=0; $i<$total_atoms; $i++) {
+        for ($j=0; $j<3; $j++) {
+            $mag += $coordinates1->[$i][$j]*$coordinates2->[$i][$j];
+        }
+    }
+    return ($mag);
+}
+
+sub trim{my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
+#sub rad2deg{my $rad=shift; return ($rad/PI)*180.0;}
+sub d0z{my ($y, $x)=@_; if(!$x){return 0}else{return $y/$x};} # divide or return 0
 # http://stackoverflow.com/questions/439647/how-do-i-print-unique-elements-in-perl-array
 sub uniq {local %_; grep {!$_{$_}++} @_}
