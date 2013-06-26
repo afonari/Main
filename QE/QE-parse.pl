@@ -27,6 +27,7 @@ my @displacements = (-1.0); # hard-coded so far for the five-point stencil 1st d
 use strict;
 use warnings;
 use Data::Dumper;
+use Math::Complex;
 
 # physical constants in eV, Ang and s
 use constant PI => 4 * atan2(1, 1);
@@ -43,6 +44,42 @@ use constant A2B => 1.88972613289; # ANGSTROM_TO_BOHR
 use constant CmToEv => VaspToEv/VaspToCm;
 
 die( "\nUse: $0 <input.out> <dyn.out>\n" ) if ( scalar( @ARGV ) < 2 );
+
+my (@f1_atoms);
+open( my $f1_fh, "<", "frag1.list") || die "Can't open frag1.list: $!\n";
+
+while(my $line = <$f1_fh>)
+{
+    next if $line =~ /^\s*$/;
+    $line = trim($line);
+    my ($index, @rest) = split /\s+/, $line;
+    $index =~ s/\D//g; $index = trim($index);
+
+    $f1_atoms[$index][0] = $rest[1];
+    $f1_atoms[$index][1] = $rest[2];
+    $f1_atoms[$index][2] = $rest[3];
+}
+close($f1_fh);
+print Dumper(@f1_atoms);
+die;
+my (%f2_labels, $f2_atoms);
+open( my $f2_fh, "<", "frag2.list") || die "Can't open frag2.list: $!\n";
+
+$iter = 0;
+while(my $line = <$f2_fh>)
+{
+    next if $line =~ /^\s*$/;
+    $line = trim($line);
+    my ($label, @rest) = split /\s+/, $line;
+    $f2_labels{$label} = $iter;
+
+    $f2_atoms->[$iter][0] = $rest[1];
+    $f2_atoms->[$iter][1] = $rest[2];
+    $f2_atoms->[$iter][2] = $rest[3];
+
+    $iter++;
+}
+close($f2_fh);
 
 open( my $outcar_fh, "<", $ARGV[0]) || die "Can't open $ARGV[0]: $!\n";
 
@@ -132,11 +169,12 @@ while(my $line = <$dyncar_fh>)
         for (my $i=0; $i<$natoms; $i++)
         {
             my ($xr, $xi, $yr, $yi, $zr, $zi) = (<$dyncar_fh> =~ m/(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/);
+            my ($xc, $yc, $zc) = ($xr + i*$xi, $yr + i*$yi, $zr + i*$zi);
             #my @ph = (atan2($xi, $xr), atan2($yi, $yr), atan2($zi, $zr)); # phases
 
             my @R = ($coord_frac[$i][0]+$r[0], $coord_frac[$i][1]+$r[1], $coord_frac[$i][2]+$r[2]);
-            my $ph = dot(\@R, \@q);
-            my @eigvec_r = ($xr*cos($ph)-$xi*sin($ph), $yr*cos($ph)-$yi*sin($ph), $zr*cos($ph)-$zi*sin($ph));
+            my $phase = 2*pi*i*dot(\@R, \@q);
+            my @eigvec_r = ( Re($xc*exp($phase)), Re($yc*exp($phase)), Re($zc*exp($phase)) );
             $vec .= sprintf("%10.6f %10.6f %10.6f", @eigvec_r)." ";
         }
         push(@e_vectors, $vec);
