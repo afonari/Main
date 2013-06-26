@@ -55,31 +55,38 @@ while(my $line = <$f1_fh>)
     my ($index, @rest) = split /\s+/, $line;
     $index =~ s/\D//g; $index = trim($index);
 
-    $f1_atoms[$index][0] = $rest[1];
+    $f1_atoms[$index][0] = $rest[1]; # atom type rests in $rest[0]
     $f1_atoms[$index][1] = $rest[2];
     $f1_atoms[$index][2] = $rest[3];
 }
 close($f1_fh);
-print Dumper(@f1_atoms);
-die;
-my (%f2_labels, $f2_atoms);
+#print Dumper(@f1_atoms);
+
+my (@f2_atoms);
 open( my $f2_fh, "<", "frag2.list") || die "Can't open frag2.list: $!\n";
 
-$iter = 0;
 while(my $line = <$f2_fh>)
 {
     next if $line =~ /^\s*$/;
     $line = trim($line);
-    my ($label, @rest) = split /\s+/, $line;
-    $f2_labels{$label} = $iter;
+    my ($index, @rest) = split /\s+/, $line;
+    $index =~ s/\D//g; $index = trim($index);
 
-    $f2_atoms->[$iter][0] = $rest[1];
-    $f2_atoms->[$iter][1] = $rest[2];
-    $f2_atoms->[$iter][2] = $rest[3];
-
-    $iter++;
+    $f2_atoms[$index][0] = $rest[1];
+    $f2_atoms[$index][1] = $rest[2];
+    $f2_atoms[$index][2] = $rest[3];
 }
 close($f2_fh);
+#print Dumper(@f2_atoms);
+
+my $bottom = "";
+if (-e "frag_bottom.list")
+{
+    local $/;
+    open( my $fb_fh, "<", "frag_bottom.list") || die "Can't open frag_bottom.list: $!\n";
+    $bottom = <$fb_fh>;
+    close($fb_fh)
+}
 
 open( my $outcar_fh, "<", $ARGV[0]) || die "Can't open $ARGV[0]: $!\n";
 
@@ -142,7 +149,9 @@ while(my $line = <$outcar_fh>)
     }
 }
 
-@coord_cart = dirkar(\@coord_frac, \@basis, $natoms);
+my @f1_atoms_cart = dirkar(\@f1_atoms, \@basis, scalar(@f1_atoms));
+my @f2_atoms_cart = dirkar(\@f2_atoms, \@basis, scalar(@f2_atoms));
+#@coord_cart = dirkar(\@coord_frac, \@basis, $natoms);
 # print Dumper(@coord_frac, @coord_cart);
 
 open( my $dyncar_fh, "<", $ARGV[1]) || die "Can't open $ARGV[1]: $!\n";
@@ -200,20 +209,51 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
     foreach (@displacements)
     {
-        print $poscar_fh sprintf("QE flavored POSCAR: disp=%f, hw=%8.5f meV\n", $_, $ev*CmToEv*1000);
-        print $poscar_fh "1.00000\n";
-        print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis[0][0], $basis[1][0], $basis[2][0]);
-        print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis[0][1], $basis[1][1], $basis[2][1]);
-        print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis[0][2], $basis[1][2], $basis[2][2]);
-        print $poscar_fh "Cartesian\n";
+        #print $poscar_fh sprintf("QE flavored POSCAR: disp=%f, hw=%8.5f meV\n", $_, $ev*CmToEv*1000);
+        #print $poscar_fh "1.00000\n";
+        #print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis[0][0], $basis[1][0], $basis[2][0]);
+        #print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis[0][1], $basis[1][1], $basis[2][1]);
+        #print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis[0][2], $basis[1][2], $basis[2][2]);
+        #print $poscar_fh "Cartesian\n";
+
+        my ($frag1_out, $frag2_out) = ("", "");
 
         for( my $j = 0; $j < $natoms; $j++)
         {
             my $sqrtm = sqrt($a_masses[$j]);
-            my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_/$sqrtm, $disps[3*$j+1]*$qi0*$_/$sqrtm, $disps[3*$j+2]*$qi0*$_/$sqrtm);
-            print $poscar_fh sprintf("%s %10.7f %10.7f %10.7f\n", $a_labels[$j], $coord_cart[$j][0]+$dx, $coord_cart[$j][1]+$dy, $coord_cart[$j][2]+$dz);
+            my @dv = ($disps[3*$j]*$qi0*$_/$sqrtm, $disps[3*$j+1]*$qi0*$_/$sqrtm, $disps[3*$j+2]*$qi0*$_/$sqrtm);
+
+            my $k = $j+1;  # CIF labeling starts from 1
+            if(defined($f1_atoms[$k]))
+            {
+                #my $i = $f1_labels{$atom_name};
+                my @pos = ($f1_atoms_cart[$k][0]+$dv[0], $f1_atoms_cart[$k][1]+$dv[1], $f1_atoms_cart[$k][2]+$dv[2]);
+                $frag1_out .= sprintf("%s%d %9.5f %9.5f %9.5f\n", $a_labels[$j], $k, @pos);
+            }
+
+            if(defined($f2_atoms[$k]))
+            {
+                #my $i = $f1_labels{$atom_name};
+                my @pos = ($f2_atoms_cart[$k][0]+$dv[0], $f2_atoms_cart[$k][1]+$dv[1], $f2_atoms_cart[$k][2]+$dv[2]);
+                $frag2_out .= sprintf("%s%d %9.5f %9.5f %9.5f\n", $a_labels[$j], $k, @pos);
+            }
+            #print $poscar_fh sprintf("%s %10.7f %10.7f %10.7f\n", $a_labels[$j], $coord_cart[$j][0]+$dx, $coord_cart[$j][1]+$dy, $coord_cart[$j][2]+$dz);
         }
+
+        # hard-coding for NWCHem, cause why not?
+        print $poscar_fh "GEOMETRY frag1 NOCENTER NOAUTOZ NOAUTOSYM\n";
+        print $poscar_fh $frag1_out;
+        print $poscar_fh "END\n\n";
+        print $poscar_fh "GEOMETRY frag2 NOCENTER NOAUTOZ NOAUTOSYM\n";
+        print $poscar_fh $frag2_out;
+        print $poscar_fh "END\n\n";
+        print $poscar_fh "GEOMETRY dimer NOCENTER NOAUTOZ NOAUTOSYM\n";
+        print $poscar_fh $frag1_out;
+        print $poscar_fh $frag2_out;
+        print $poscar_fh "END\n\n";
         print $poscar_fh "\n";
+        print $poscar_fh $bottom;
+        print $poscar_fh "\n###\n"
     }
 }
 
@@ -228,6 +268,7 @@ sub dirkar {
     my ($i,$v1,$v2,$v3, @ret);
 
     for ($i=0; $i<$total_atoms; $i++) {
+        if(!defined($vector[$i])) {next;}
         $v1 = $vector[$i][0]*$basis[0][0] + $vector[$i][1]*$basis[0][1] + $vector[$i][2]*$basis[0][2];
         $v2 = $vector[$i][0]*$basis[1][0] + $vector[$i][1]*$basis[1][1] + $vector[$i][2]*$basis[1][2];
         $v3 = $vector[$i][0]*$basis[2][0] + $vector[$i][1]*$basis[2][1] + $vector[$i][2]*$basis[2][2];
