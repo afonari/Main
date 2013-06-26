@@ -5,7 +5,7 @@
 #                License: MIT License
 #
 # ===== ## =====
-# This script is a fork of (copyrighted accordingly):
+# This script is based on:
 #
 #   Program: xdatgen
 #   Sung Sakong, PhD
@@ -14,7 +14,7 @@
 #   url: http://www.uni-due.de/~hp0058/vmdplugins/utilities/xdatgen.c
 ###
 #
-#   Crystallographic conversions are heavily based on and copyrighted accordingly (some SUBs are copy/pasted):
+#   Crystallographic conversions are based on:
 #   http://theory.cm.utexas.edu/vasp/scripts/src/Vasp.pm
 # ===== ## =====
 ##
@@ -46,7 +46,7 @@ die( "\nUse: $0 <input.out> <dyn.out>\n" ) if ( scalar( @ARGV ) < 2 );
 
 open( my $outcar_fh, "<", $ARGV[0]) || die "Can't open $ARGV[0]: $!\n";
 
-my ($alat, $basis, $coord_frac, $natoms, @a_labels, @a_masses, %label_mass, $coord_cart, @r);
+my ($alat, @basis, @coord_frac, $natoms, @a_labels, @a_masses, %label_mass, @coord_cart, @r_latt);
 while(my $line = <$outcar_fh>)
 {
     if($line =~ /lattice parameter \(alat\)\s+=\s+([\d\.]+)/)
@@ -64,9 +64,9 @@ while(my $line = <$outcar_fh>)
             # This is how VASP reads in the basis
             for (my $j=0; $j<3; $j++)
             {
-                $basis->[$j][$i] = $t[$j]*$alat/A2B;
+                $basis[$j][$i] = $t[$j]*$alat/A2B;
             }
-            $r[$i] = sqrt($basis->[0][$i]**2 + $basis->[1][$i]**2 + $basis->[2][$i]**2)
+            $r_latt[$i] = sqrt($basis[0][$i]**2 + $basis[1][$i]**2 + $basis[2][$i]**2)
         }
     }
 
@@ -95,9 +95,9 @@ while(my $line = <$outcar_fh>)
             {
                 push(@a_labels, $1);
                 push(@a_masses, $label_mass{$1});
-                $coord_frac->[$#a_labels][0] = $2; # x
-                $coord_frac->[$#a_labels][1] = $3; # y
-                $coord_frac->[$#a_labels][2] = $4; # z
+                $coord_frac[$#a_labels][0] = $2; # x
+                $coord_frac[$#a_labels][1] = $3; # y
+                $coord_frac[$#a_labels][2] = $4; # z
             }else{last;}
         }
         $natoms = scalar(@a_labels);
@@ -105,21 +105,21 @@ while(my $line = <$outcar_fh>)
     }
 }
 
-$coord_cart = dirkar($coord_frac, $basis, $natoms);
+@coord_cart = dirkar(\@coord_frac, \@basis, $natoms);
+# print Dumper(@coord_frac, @coord_cart);
 
 open( my $dyncar_fh, "<", $ARGV[1]) || die "Can't open $ARGV[1]: $!\n";
 
-my (@q, @e_values, @e_vectors);
+my (@e_values, @e_vectors, @q);
 while(my $line = <$dyncar_fh>)
 {
-    # q =       0.0000      0.0000     -0.6802
-    if($line =~ /\s*q\s+=\s+([-\d\.]+)\s+([-\d\.]+)\s+([-\d\.]+)/) # its Cartesian (1/length)
+    # q = (      0.0000      0.0000     -0.6802
+    if($line =~ /\s*q\s+=[\s+(]+([-\d\.]+)\s+([-\d\.]+)\s+([-\d\.]+)/) # its Cartesian (1/length)
     {
         @q = ($1, $2, $3);
-        #print "Found q point: $qx, $qy, $qz 2pi/alat\n";
-        @q = map { $_ *  2*PI/($alat/A2B) } @q;
-        #print "Found q point: $qx, $qy, $qz 1/A\n";
-
+        @q = m3by1(\@basis, \@q);
+        @q = map { $_ *  1/($alat/A2B) } @q;
+        print sprintf("Found q point: {%6.4f, %6.4f, %6.4f} in reduced reciprocal coordinates\n", @q);
     }
 
     # omega( 1) =       1.939432 [THz] =      64.692486 [cm-1]
@@ -127,25 +127,17 @@ while(my $line = <$dyncar_fh>)
     {
         push(@e_values, $1);
 
-        my $vec;
+        my $vec='';
+        my @r = (d0z(1, abs($q[0])), d0z(1, abs($q[1])), d0z(1, abs($q[2])));
         for (my $i=0; $i<$natoms; $i++)
         {
             my ($xr, $xi, $yr, $yi, $zr, $zi) = (<$dyncar_fh> =~ m/(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)/);
-            my @ph = (atan2($xi, $xr), atan2($yi, $yr), atan2($zi, $zr)); # phases
-            my @f = (d0z(2*PI,$q[0]*$r[0]), d0z(2*PI,$q[1]*$r[1]), d0z(2*PI,$q[2]*$r[2]));
+            #my @ph = (atan2($xi, $xr), atan2($yi, $yr), atan2($zi, $zr)); # phases
 
-            #my $tz_i =(sin($phz+$qz*$r[2]*$fz)-sin($phz))/2.0; this is THE CHECK!
-            #print $s[2]."\n";
-
-            my @s;
-            for (my $j=0; $j<3; $j++){
-                $s[$j] = (cos($ph[$j]+$q[$j]*$r[$j]*$f[$j])+cos($ph[$j]))/2.0;
-            }
-
-            $vec .= sprintf("%10.6f %10.6f %10.6f", abs($xr)*$s[0], abs($yr)*$s[1], abs($zr)*$s[2])." ";
-            #print sprintf("%10.6f %10.6f %10.6f", abs($xr)*$s[0], abs($yr)*$s[1], abs($zr)*$s[2])."\n";
-            # print get_phase($t[0])." ".get_phase($t[2])." ".get_phase($t[4])."\n";
-            #die;
+            my @R = ($coord_frac[$i][0]+$r[0], $coord_frac[$i][1]+$r[1], $coord_frac[$i][2]+$r[2]);
+            my $ph = dot(\@R, \@q);
+            my @eigvec_r = ($xr*cos($ph)-$xi*sin($ph), $yr*cos($ph)-$yi*sin($ph), $zr*cos($ph)-$zi*sin($ph));
+            $vec .= sprintf("%10.6f %10.6f %10.6f", @eigvec_r)." ";
         }
         push(@e_vectors, $vec);
     }
@@ -154,7 +146,7 @@ while(my $line = <$dyncar_fh>)
 open( my $poscar_fh, ">", "DISPCAR" ) || die "Can't open DISPCAR file: $!";
 
 ## the differences between QE and VASP:
-#  1. frequencies are positive and given in cm-1
+#  1. eigenvalues have the "right" sign and are given in cm-1
 #  2. eigenvectors are already normalized by sqrt(mass)
 ##
 for( my $i = 0; $i < scalar(@e_values); $i++)
@@ -172,16 +164,16 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     {
         print $poscar_fh sprintf("QE flavored POSCAR: disp=%f, hw=%8.5f meV\n", $_, $ev*CmToEv*1000);
         print $poscar_fh "1.00000\n";
-        print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis->[0][0], $basis->[1][0], $basis->[2][0]);
-        print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis->[0][1], $basis->[1][1], $basis->[2][1]);
-        print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis->[0][2], $basis->[1][2], $basis->[2][2]);
+        print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis[0][0], $basis[1][0], $basis[2][0]);
+        print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis[0][1], $basis[1][1], $basis[2][1]);
+        print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis[0][2], $basis[1][2], $basis[2][2]);
         print $poscar_fh "Cartesian\n";
 
         for( my $j = 0; $j < $natoms; $j++)
         {
             my $sqrtm = sqrt($a_masses[$j]);
             my($dx, $dy, $dz) = ($disps[3*$j]*$qi0*$_/$sqrtm, $disps[3*$j+1]*$qi0*$_/$sqrtm, $disps[3*$j+2]*$qi0*$_/$sqrtm);
-            print $poscar_fh sprintf("%s %10.7f %10.7f %10.7f\n", $a_labels[$j], $coord_cart->[$j][0]+$dx, $coord_cart->[$j][1]+$dy, $coord_cart->[$j][2]+$dz);
+            print $poscar_fh sprintf("%s %10.7f %10.7f %10.7f\n", $a_labels[$j], $coord_cart[$j][0]+$dx, $coord_cart[$j][1]+$dy, $coord_cart[$j][2]+$dz);
         }
         print $poscar_fh "\n";
     }
@@ -191,21 +183,46 @@ print "DISPCAR created\n";
 close($poscar_fh);
 
 sub dirkar {
-    my $vector = shift;
-    my $basis = shift;
+# http://stackoverflow.com/questions/3980493/how-can-i-shift-off-a-passed-array-reference-directly-to-an-array
+    my @vector = @{+shift};
+    my @basis = @{+shift};
     my $total_atoms = shift;
-    my ($i,$v1,$v2,$v3);
+    my ($i,$v1,$v2,$v3, @ret);
 
     for ($i=0; $i<$total_atoms; $i++) {
-        $v1 = $vector->[$i][0]*$basis->[0][0] + $vector->[$i][1]*$basis->[0][1] + $vector->[$i][2]*$basis->[0][2];
-        $v2 = $vector->[$i][0]*$basis->[1][0] + $vector->[$i][1]*$basis->[1][1] + $vector->[$i][2]*$basis->[1][2];
-        $v3 = $vector->[$i][0]*$basis->[2][0] + $vector->[$i][1]*$basis->[2][1] + $vector->[$i][2]*$basis->[2][2];
-        $vector->[$i][0] = $v1;
-        $vector->[$i][1] = $v2;
-        $vector->[$i][2] = $v3;
+        $v1 = $vector[$i][0]*$basis[0][0] + $vector[$i][1]*$basis[0][1] + $vector[$i][2]*$basis[0][2];
+        $v2 = $vector[$i][0]*$basis[1][0] + $vector[$i][1]*$basis[1][1] + $vector[$i][2]*$basis[1][2];
+        $v3 = $vector[$i][0]*$basis[2][0] + $vector[$i][1]*$basis[2][1] + $vector[$i][2]*$basis[2][2];
+        $ret[$i][0] = $v1;
+        $ret[$i][1] = $v2;
+        $ret[$i][2] = $v3;
     }
 
-    return ($vector);
+    return @ret;
+}
+
+sub m3by1 {
+    my @m = @{+shift};
+    my @v = @{+shift};
+    my @r;
+
+    $r[0] = $m[0][0]*$v[0] + $m[0][1]*$v[1] + $m[0][2]*$v[2];
+    $r[1] = $m[1][0]*$v[0] + $m[1][1]*$v[1] + $m[1][2]*$v[2];
+    $r[2] = $m[2][0]*$v[0] + $m[2][1]*$v[1] + $m[2][2]*$v[2];
+    return @r;
+}
+
+sub dot {
+    my @v1 = @{+shift};
+    my @v2 = @{+shift};
+
+    my $ret = 0.0;
+    for (my $i=0; $i<3; $i++) {
+        #$v1 = $vector[$i][0]*$q[0] + $vector[$i][1]*$q[1] + $vector[$i][2]*$q[2];
+        $ret += $v1[$i]*$v2[$i];
+    }
+
+    return $ret;
 }
 
 sub dot_product {
@@ -225,7 +242,6 @@ sub dot_product {
 }
 
 sub trim{my $s=shift; $s =~ s/^\s+|\s+$//g; return $s;}
-#sub rad2deg{my $rad=shift; return ($rad/PI)*180.0;}
-sub d0z{my ($y, $x)=@_; if(!$x){return 0}else{return $y/$x};} # divide or return 0
+sub d0z{my ($y, $x)=@_; if(!$x){return 0.0;}else{return $y/$x};} # divide or return 0
 # http://stackoverflow.com/questions/439647/how-do-i-print-unique-elements-in-perl-array
 sub uniq {local %_; grep {!$_{$_}++} @_}
