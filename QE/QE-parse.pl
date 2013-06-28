@@ -20,7 +20,7 @@
 ##
 #
 #
-my @displacements = (-1.0); # hard-coded so far for the five-point stencil 1st deriv.
+my @displacements = (-0.005, 0.005); # hard-coded so far for the five-point stencil 1st deriv.
 #
 ##  ============== EDIT BELOW WITH CAUTION!! ============
 
@@ -156,7 +156,7 @@ my @f2_atoms_cart = dirkar(\@f2_atoms, \@basis, scalar(@f2_atoms));
 
 open( my $dyncar_fh, "<", $ARGV[1]) || die "Can't open $ARGV[1]: $!\n";
 
-my (@e_values, @e_vectors, @q);
+my (@e_values, @e_vectors, @norm, @q);
 while(my $line = <$dyncar_fh>)
 {
     # q = (      0.0000      0.0000     -0.6802
@@ -169,9 +169,11 @@ while(my $line = <$dyncar_fh>)
     }
 
     # omega( 1) =       1.939432 [THz] =      64.692486 [cm-1]
-    if($line =~ /\s*omega.+?([-\d\.]+)\s*\[cm-1\]/)
+    if($line =~ /\s*omega.+?([-\d\.]+)\s*\[cm-1\];\s*norm=\s*([-\d\.]+)/)
     {
         push(@e_values, $1);
+        push(@norm, $2);
+        print $2."\n";
 
         my $vec='';
         my @r = (d0z(1, abs($q[0])), d0z(1, abs($q[1])), d0z(1, abs($q[2])));
@@ -202,14 +204,15 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
     my $ev = $e_values[$i];
     if($ev < 0.0){next;} # skip imaginary frequency
 
-    my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*CmToEv)); # mode quanta
+    #my $qi0 = sqrt((HBAR*CL)**2/(AM*$ev*CmToEv)); # mode quanta
+    my $qi0 = 1.0; # for now !!
     # printf("%15.12f %15.12f\n", sqrt($ev)*VaspToEv, $qi0);
 
     my @disps = split('\s+', trim($e_vectors[$i]));
 
     foreach (@displacements)
     {
-        #print $poscar_fh sprintf("QE flavored POSCAR: disp=%f, hw=%8.5f meV\n", $_, $ev*CmToEv*1000);
+        print $poscar_fh sprintf("# disp = %.3f, w = %8.5f cm-1, hw = %8.5f meV\n", $_, $ev, $ev*CmToEv*1000);
         #print $poscar_fh "1.00000\n";
         #print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis[0][0], $basis[1][0], $basis[2][0]);
         #print $poscar_fh sprintf("%10.6f %10.6f %10.6f\n", $basis[0][1], $basis[1][1], $basis[2][1]);
@@ -220,8 +223,10 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
         for( my $j = 0; $j < $natoms; $j++)
         {
-            my $sqrtm = sqrt($a_masses[$j]);
+            my $sqrtm = sqrt($norm[$j]); # 1.0; #sqrt($a_masses[$j]);
             my @dv = ($disps[3*$j]*$qi0*$_/$sqrtm, $disps[3*$j+1]*$qi0*$_/$sqrtm, $disps[3*$j+2]*$qi0*$_/$sqrtm);
+            #print @dv;
+            #print "\n";
 
             my $k = $j+1;  # CIF labeling starts from 1
             if(defined($f1_atoms[$k]))
