@@ -223,8 +223,7 @@ for( my $i = 0; $i < scalar(@e_values); $i++)
 
         for( my $j = 0; $j < $natoms; $j++)
         {
-            my $sqrtm = 1.0; # 1.0; #sqrt($a_masses[$j]);
-            $qi0 = sqrt($a_masses[$j])*sqrt($norm[$j]);
+            my $sqrtm = sqrt($norm[$j]); # 1.0; #sqrt($a_masses[$j]);
             my @dv = ($disps[3*$j]*$qi0*$_/$sqrtm, $disps[3*$j+1]*$qi0*$_/$sqrtm, $disps[3*$j+2]*$qi0*$_/$sqrtm);
             #print @dv;
             #print "\n";

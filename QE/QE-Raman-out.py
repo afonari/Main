@@ -1,9 +1,24 @@
 import re
 import sys
 from math import sqrt
+import numpy as np
+
+
+def sym_mat(mat, size, debug=False):
+    m = mat
+    for i in range(size):
+        for j in range(size):
+            #dif = dif + abs(dynout(nu_i,nu_j)-dynout(nu_j,nu_i))
+            m[i][j] = 0.5*(m[i][j]+m[j][i])
+            m[j][i] = m[i][j]
+
+    if debug == True:
+        print "dif"
+
+    return m
 
 CmtoEv = 0.0001239842573
-Bohr = 0.52917721092 # [A]
+Bohr = 0.529177208590000 # [A]
 
 scf_in = open(sys.argv[1], 'r')
 
@@ -40,7 +55,7 @@ while True:
             atomic_symbol = p1.group(1)
             symbols.append( atomic_symbol )
             masses.append( masses_dict[atomic_symbol] )
-            positions.append([ float(p1.group(2))/Bohr, float(p1.group(3))/Bohr, float(p1.group(4))/Bohr ])
+            positions.append([ float(p1.group(2)), float(p1.group(3)), float(p1.group(4)) ])
 scf_in.close()
 natoms = len(symbols)
 #print symbols, masses, positions
@@ -73,7 +88,6 @@ while True:
             continue
 
         eigvals.append(eigval)
-        eigenvecs.append("")
         norms.append(norm)
         for i in range(natoms):
             line = dynmat_out.readline()
@@ -81,65 +95,61 @@ while True:
             if not p1:
                 break
 
-            #eigenvec = [ float(p1.group(1)), float(p1.group(3)), float(p1.group(5)) ]
-            eigenvecs[len(eigvals)-1] += " "+p1.group(1)+" "+p1.group(3)+" "+p1.group(5)
+            eigenvec = [ (float(p1.group(1))+1j*float(p1.group(2))).real, (float(p1.group(3))+1j*float(p1.group(4))).real, (float(p1.group(5))+1j*float(p1.group(6))).real ]
+            eigenvecs.append( eigenvec )
 
+#stepsize = 0.005
+coeff = 0.0
+amu_ry = 911.444242132273
+convfact = Bohr**2*sqrt(amu_ry)
+omega_o_fpi = 116.023953513992
 
-#print eigenvecs
-#stepsize = 0.02
 for i in range(len(eigvals)):
+
+    ra_np = np.zeros((3,3))
     for step in (-1,1):
+        if step == -1:
+            coeff = -0.5
+        else:
+            coeff = 0.5
+
         filename = '%03d-%d' % (i, step)
 
-        scf_file = open(filename+'-scf.in', 'w')
-        ph_file = open(filename+'-ph.in', 'w')
+        ph_file = open(filename+'-ph.in.out', 'r')
 
-        scf_in = open(sys.argv[1], 'r')
         while True:
-            line = scf_in.readline()
+            line = ph_file.readline()
             if not line:
                 break
 
-            p = re.search(r'\s*&control', line)
+            p = re.search(r'Dielectric constant in cartesian axis', line)
             if p:
-                scf_file.write(line+'    outdir = "./'+filename+'"\n')
-                continue
-            
-            p = re.search(r'ATOMIC_POSITIONS angstrom', line)
-            if p:
-                scf_file.write("ATOMIC_POSITIONS bohr\n")
-                eigenvec = [float(x) for x in eigenvecs[i].split()]
-                #print step, i, eigvals[i]
-                for j in range(natoms):
-                    line = scf_in.readline()
-                    pos = positions[j]
-                    vec = eigenvec[3*j:3*j+3]
-                    #print vec
-                    eigenvec_scaled = [a * stepsize * step for a in vec]
-                    #disp = sqrt(norm) * sqrt(masses[j])
-                    pos = [a + b for (a,b) in zip(pos,eigenvec_scaled)]
-                    print '%5e %5e %5e; %5e %5e %5e' % (vec[0],vec[1],vec[2],eigenvec_scaled[0], eigenvec_scaled[1], eigenvec_scaled[2])
+                ph_file.readline() # empty line
+                ra =[]
+                for j in range(3):
+                    line = ph_file.readline()
+                    p1 = re.search(r'\(\s*(-*\d+\.\d+)\s+(-*\d+\.\d+)\s+(-*\d+\.\d+)', line)
+                    line = [ float(p1.group(1)), float(p1.group(2)), float(p1.group(3)) ]
+                    ra.append( line )
 
-                    scf_file.write("%s %7.5f %7.5f %7.5f\n" % (symbols[j], pos[0], pos[1], pos[2]) )
-                print ""
-                continue
+                #print ra
+                ra_sym = sym_mat(ra, 3)
+                #print ra_sym
+                ra_np += np.array(ra_sym) * coeff/stepsize * sqrt(norms[i]) * omega_o_fpi * convfact
 
-            scf_file.write(line)
+                break # while true
 
-        ph_file.write("--\n")
-        ph_file.write("&inputph\n")
-        ph_file.write("  tr2_ph   =  1.0d-12\n")
-        ph_file.write('  outdir   =  "./'+filename+'"\n')
-        ph_file.write('  prefix   = "output"\n')
-        ph_file.write('  reduce_io=.TRUE.\n')
-        ph_file.write('  epsil=.TRUE.\n')
-        ph_file.write('  trans=.false.\n')
-        ph_file.write('  zeu=.false.\n')
-        ph_file.write('/\n')
-        ph_file.write('0.0 0.0 0.0\n')
+        if step == 1:
+            alpha = (ra_np[0,0] + ra_np[1,1] + ra_np[2,2])/3.0
+            beta2 = ( (ra_np[0,0] - ra_np[1,1])**2 + (ra_np[0,0] - ra_np[2,2])**2 + (ra_np[1,1] - ra_np[2,2])**2 + 6.0 * (ra_np[0,1]**2 + ra_np[0,2]**2 + ra_np[1,2]**2) )/2.0
+            print eigvals[i], "  ", (45.0*alpha**2 + 7.0*beta2)#, alpha, beta2
+            #print '%7.4f %7.4f %7.4f %7.4f %7.4f' % (ra_np[0,0], ra_np[0,1], ra_np[0,2], ra_np[1,1], ra_np[1,2])
+            #print ra_np
 
 
 
-#print eigvals
-#print eigenvecs
+
+
+
+
 
